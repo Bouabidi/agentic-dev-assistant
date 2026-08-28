@@ -12,8 +12,22 @@ export class TasksService {
     },
   ];
 
-  findAll(): Task[] {
-    return this.tasks;
+  findAll(completed?: boolean): Task[] {
+    if (completed === undefined) {
+      return this.tasks;
+    }
+
+    return this.tasks.filter((task) => task.completed === completed);
+  }
+
+  stats(): { total: number; completed: number; incomplete: number } {
+    const completed = this.tasks.filter((task) => task.completed).length;
+
+    return {
+      total: this.tasks.length,
+      completed,
+      incomplete: this.tasks.length - completed,
+    };
   }
 
   findOne(id: number): Task {

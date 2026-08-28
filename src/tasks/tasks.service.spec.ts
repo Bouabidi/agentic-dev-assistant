@@ -19,6 +19,50 @@ describe('TasksService', () => {
     expect(tasks[0].title).toBe('Learn GH-600');
   });
 
+  it('should return completed tasks when filtered', () => {
+    service.findAll()[0].completed = true;
+
+    const tasks = service.findAll(true);
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].completed).toBe(true);
+  });
+
+  it('should return incomplete tasks when filtered', () => {
+    const tasks = service.findAll(false);
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].completed).toBe(false);
+  });
+
+  it('should return task statistics', () => {
+    expect(service.stats()).toEqual({
+      total: 1,
+      completed: 0,
+      incomplete: 1,
+    });
+  });
+
+  it('should update task statistics after completing a task', () => {
+    service.findAll()[0].completed = true;
+
+    expect(service.stats()).toEqual({
+      total: 1,
+      completed: 1,
+      incomplete: 0,
+    });
+  });
+
+  it('should update task statistics after creating a task', () => {
+    service.create('Study MCP');
+
+    expect(service.stats()).toEqual({
+      total: 2,
+      completed: 0,
+      incomplete: 2,
+    });
+  });
+
   it('should create a task', () => {
     const task = service.create('Study MCP');
 
