@@ -29,4 +29,13 @@ describe('AppController (e2e)', () => {
       incomplete: 1,
     });
   });
+
+  it('/tasks/:id (DELETE)', () => {
+    return request(app.getHttpServer()).delete('/tasks/1').expect(200).expect({
+      id: 1,
+      title: 'Learn GH-600',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+    });
+  });
 });
