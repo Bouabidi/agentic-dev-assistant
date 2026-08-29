@@ -17,4 +17,18 @@ describe('TasksController', () => {
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
+
+  it('should reject invalid completion filters', () => {
+    expect(() => controller.findAll('anything')).toThrow(
+      'The completed query parameter must be true or false',
+    );
+  });
+
+  it('should return task statistics', () => {
+    expect(controller.stats()).toEqual({
+      total: 1,
+      completed: 0,
+      incomplete: 1,
+    });
+  });
 });
