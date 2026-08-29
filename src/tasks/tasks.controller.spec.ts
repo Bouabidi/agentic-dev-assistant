@@ -31,4 +31,17 @@ describe('TasksController', () => {
       incomplete: 1,
     });
   });
+
+  it('should delete a task', () => {
+    expect(controller.remove('1')).toEqual({
+      id: 1,
+      title: 'Learn GH-600',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+    });
+  });
+
+  it('should throw when deleting a missing task', () => {
+    expect(() => controller.remove('999')).toThrow('Task 999 not found');
+  });
 });

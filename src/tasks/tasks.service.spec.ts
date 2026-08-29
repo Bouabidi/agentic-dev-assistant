@@ -63,6 +63,28 @@ describe('TasksService', () => {
     });
   });
 
+  it('should delete a task', () => {
+    const task = service.remove(1);
+
+    expect(task.id).toBe(1);
+    expect(service.findAll()).toHaveLength(0);
+  });
+
+  it('should throw when deleting a missing task', () => {
+    expect(() => service.remove(999)).toThrow('Task 999 not found');
+  });
+
+  it('should update task statistics after deleting a task', () => {
+    service.create('Study MCP');
+    service.remove(1);
+
+    expect(service.stats()).toEqual({
+      total: 1,
+      completed: 0,
+      incomplete: 1,
+    });
+  });
+
   it('should create a task', () => {
     const task = service.create('Study MCP');
 
