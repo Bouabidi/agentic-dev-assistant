@@ -32,6 +32,35 @@ describe('TasksController', () => {
     });
   });
 
+  it('should search tasks with a valid query', () => {
+    expect(controller.search('GH-600')).toEqual([
+      {
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+      },
+    ]);
+  });
+
+  it('should reject a missing search query', () => {
+    expect(() => controller.search(undefined as any)).toThrow(
+      'Search query is required',
+    );
+  });
+
+  it('should reject an empty search query', () => {
+    expect(() => controller.search('')).toThrow(
+      'Search query must be a non-empty string',
+    );
+  });
+
+  it('should reject a whitespace-only search query', () => {
+    expect(() => controller.search('   ')).toThrow(
+      'Search query must be a non-empty string',
+    );
+  });
+
   it('should reject creating a task without a title', () => {
     expect(() => controller.create({} as any)).toThrow(
       'Task title is required',

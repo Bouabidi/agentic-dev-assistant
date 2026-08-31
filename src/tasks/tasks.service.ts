@@ -20,6 +20,19 @@ export class TasksService {
     return this.tasks.filter((task) => task.completed === completed);
   }
 
+  search(query: string): Task[] {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return this.tasks.filter((task) => {
+      const title = task.title.toLowerCase();
+      const description = (task.description ?? '').toLowerCase();
+
+      return (
+        title.includes(normalizedQuery) || description.includes(normalizedQuery)
+      );
+    });
+  }
+
   stats(): { total: number; completed: number; incomplete: number } {
     const completed = this.tasks.filter((task) => task.completed).length;
 

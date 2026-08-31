@@ -71,6 +71,25 @@ export class TasksController {
     return this.tasksService.stats();
   }
 
+  @Get('search')
+  search(@Query('q') q?: string) {
+    if (q === undefined) {
+      throw new BadRequestException('Search query is required');
+    }
+
+    if (typeof q !== 'string') {
+      throw new BadRequestException('Search query must be a non-empty string');
+    }
+
+    const trimmedQuery = q.trim();
+
+    if (trimmedQuery === '') {
+      throw new BadRequestException('Search query must be a non-empty string');
+    }
+
+    return this.tasksService.search(trimmedQuery);
+  }
+
   @Get()
   findAll(@Query('completed') completed?: string) {
     if (completed === undefined) {

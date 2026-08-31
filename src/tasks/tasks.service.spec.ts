@@ -43,6 +43,56 @@ describe('TasksService', () => {
     });
   });
 
+  it('should find tasks by title', () => {
+    service.create('Build a demo app');
+
+    expect(service.search('demo')).toEqual([
+      {
+        id: 2,
+        title: 'Build a demo app',
+        description: undefined,
+        completed: false,
+      },
+    ]);
+  });
+
+  it('should find tasks by description', () => {
+    service.create('Write docs', 'Plan onboarding and release notes');
+
+    expect(service.search('onboarding')).toEqual([
+      {
+        id: 2,
+        title: 'Write docs',
+        description: 'Plan onboarding and release notes',
+        completed: false,
+      },
+    ]);
+  });
+
+  it('should search case-insensitively', () => {
+    service.create('Ship Release Candidate');
+
+    expect(service.search('release')).toEqual([
+      {
+        id: 2,
+        title: 'Ship Release Candidate',
+        description: undefined,
+        completed: false,
+      },
+    ]);
+  });
+
+  it('should return an empty array when there are no matches', () => {
+    expect(service.search('zzz')).toEqual([]);
+  });
+
+  it('should return multiple matches', () => {
+    service.create('Alpha plan');
+    service.create('Beta plan');
+
+    expect(service.search('plan')).toHaveLength(2);
+  });
+
   it('should update a task and preserve unspecified fields', () => {
     const task = service.update(1, { title: 'Updated task title' });
 
