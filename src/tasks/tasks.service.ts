@@ -53,6 +53,14 @@ export class TasksService {
     return task;
   }
 
+  update(id: number, updates: Partial<Task>): Task {
+    const task = this.findOne(id);
+
+    Object.assign(task, updates);
+
+    return task;
+  }
+
   remove(id: number): Task {
     const taskIndex = this.tasks.findIndex((task) => task.id === id);
 

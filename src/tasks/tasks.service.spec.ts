@@ -43,8 +43,20 @@ describe('TasksService', () => {
     });
   });
 
+  it('should update a task and preserve unspecified fields', () => {
+    const task = service.update(1, { title: 'Updated task title' });
+
+    expect(task).toEqual({
+      id: 1,
+      title: 'Updated task title',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+    });
+    expect(service.findOne(1).description).toBe('Study Agentic AI Systems');
+  });
+
   it('should update task statistics after completing a task', () => {
-    service.findAll()[0].completed = true;
+    service.update(1, { completed: true });
 
     expect(service.stats()).toEqual({
       total: 1,
@@ -72,6 +84,12 @@ describe('TasksService', () => {
 
   it('should throw when deleting a missing task', () => {
     expect(() => service.remove(999)).toThrow('Task 999 not found');
+  });
+
+  it('should throw when updating a missing task', () => {
+    expect(() => service.update(999, { title: 'Ghost task' })).toThrow(
+      'Task 999 not found',
+    );
   });
 
   it('should update task statistics after deleting a task', () => {
