@@ -41,7 +41,22 @@ describe('TasksController', () => {
     });
   });
 
+  it('should update a task', () => {
+    expect(controller.update('1', { title: 'Updated task title' })).toEqual({
+      id: 1,
+      title: 'Updated task title',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+    });
+  });
+
   it('should throw when deleting a missing task', () => {
     expect(() => controller.remove('999')).toThrow('Task 999 not found');
+  });
+
+  it('should throw when updating a missing task', () => {
+    expect(() => controller.update('999', { completed: true })).toThrow(
+      'Task 999 not found',
+    );
   });
 });

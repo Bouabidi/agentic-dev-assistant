@@ -30,6 +30,22 @@ describe('AppController (e2e)', () => {
     });
   });
 
+  it('/tasks/:id (PATCH)', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({
+        title: 'Updated GH-600',
+        completed: true,
+      })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Updated GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: true,
+      });
+  });
+
   it('/tasks/:id (DELETE)', () => {
     return request(app.getHttpServer()).delete('/tasks/1').expect(200).expect({
       id: 1,
