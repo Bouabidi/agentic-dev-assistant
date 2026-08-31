@@ -30,6 +30,36 @@ describe('AppController (e2e)', () => {
     });
   });
 
+  it('/tasks (POST) creates a valid task', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({
+        title: 'Write tests',
+        description: 'Add validation coverage',
+      })
+      .expect(201)
+      .expect({
+        id: 2,
+        title: 'Write tests',
+        description: 'Add validation coverage',
+        completed: false,
+      });
+  });
+
+  it('/tasks (POST) rejects missing title', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ description: 'Missing title' })
+      .expect(400);
+  });
+
+  it('/tasks (POST) rejects empty title', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: '   ' })
+      .expect(400);
+  });
+
   it('/tasks/:id (PATCH)', () => {
     return request(app.getHttpServer())
       .patch('/tasks/1')
@@ -44,6 +74,13 @@ describe('AppController (e2e)', () => {
         description: 'Study Agentic AI Systems',
         completed: true,
       });
+  });
+
+  it('/tasks/:id (PATCH) rejects invalid completed value', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ completed: 'yes' })
+      .expect(400);
   });
 
   it('/tasks/:id (DELETE)', () => {
