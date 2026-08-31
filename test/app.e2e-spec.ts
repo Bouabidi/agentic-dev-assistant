@@ -30,6 +30,31 @@ describe('AppController (e2e)', () => {
     });
   });
 
+  it('/tasks/search (GET) returns matching tasks', () => {
+    return request(app.getHttpServer())
+      .get('/tasks/search?q=GH-600')
+      .expect(200)
+      .expect([
+        {
+          id: 1,
+          title: 'Learn GH-600',
+          description: 'Study Agentic AI Systems',
+          completed: false,
+        },
+      ]);
+  });
+
+  it('/tasks/search (GET) returns no results', () => {
+    return request(app.getHttpServer())
+      .get('/tasks/search?q=xyz')
+      .expect(200)
+      .expect([]);
+  });
+
+  it('/tasks/search (GET) rejects invalid query', () => {
+    return request(app.getHttpServer()).get('/tasks/search').expect(400);
+  });
+
   it('/tasks (POST) creates a valid task', () => {
     return request(app.getHttpServer())
       .post('/tasks')
