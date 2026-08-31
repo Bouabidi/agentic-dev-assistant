@@ -32,6 +32,60 @@ describe('TasksController', () => {
     });
   });
 
+  it('should reject creating a task without a title', () => {
+    expect(() => controller.create({} as any)).toThrow(
+      'Task title is required',
+    );
+  });
+
+  it('should reject creating a task with an empty title', () => {
+    expect(() => controller.create({ title: '' })).toThrow(
+      'Task title must be a non-empty string',
+    );
+  });
+
+  it('should reject creating a task with a whitespace-only title', () => {
+    expect(() => controller.create({ title: '   ' })).toThrow(
+      'Task title must be a non-empty string',
+    );
+  });
+
+  it('should reject creating a task with a non-string title', () => {
+    expect(() => controller.create({ title: 123 as any })).toThrow(
+      'Task title must be a string',
+    );
+  });
+
+  it('should reject creating a task with a non-string description', () => {
+    expect(() =>
+      controller.create({ title: 'Study', description: 42 as any }),
+    ).toThrow('Task description must be a string');
+  });
+
+  it('should reject updating a task with a non-string title', () => {
+    expect(() => controller.update('1', { title: 123 as any })).toThrow(
+      'Task title must be a string',
+    );
+  });
+
+  it('should reject updating a task with an empty title', () => {
+    expect(() => controller.update('1', { title: '' })).toThrow(
+      'Task title must be a non-empty string',
+    );
+  });
+
+  it('should reject updating a task with a non-string description', () => {
+    expect(() => controller.update('1', { description: 123 as any })).toThrow(
+      'Task description must be a string',
+    );
+  });
+
+  it('should reject updating a task with a non-boolean completed value', () => {
+    expect(() => controller.update('1', { completed: 'yes' as any })).toThrow(
+      'Task completed must be a boolean',
+    );
+  });
+
   it('should delete a task', () => {
     expect(controller.remove('1')).toEqual({
       id: 1,
