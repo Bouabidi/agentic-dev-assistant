@@ -66,6 +66,30 @@ export class TasksController {
     }
   }
 
+  private validateCompleteManyInput(body: { taskIds?: unknown }): number[] {
+    if (body.taskIds === undefined) {
+      throw new BadRequestException('Task IDs are required');
+    }
+
+    if (!Array.isArray(body.taskIds)) {
+      throw new BadRequestException('Task IDs must be an array of numbers');
+    }
+
+    if (body.taskIds.length === 0) {
+      throw new BadRequestException('Task IDs must not be empty');
+    }
+
+    const taskIds = body.taskIds.map((id) => {
+      if (typeof id !== 'number' || !Number.isInteger(id)) {
+        throw new BadRequestException('Task IDs must be an array of numbers');
+      }
+
+      return id;
+    });
+
+    return taskIds;
+  }
+
   @Get('stats')
   stats() {
     return this.tasksService.stats();
@@ -129,6 +153,18 @@ export class TasksController {
       body.title as string,
       body.description as string | undefined,
     );
+  }
+
+  @Patch('complete')
+  completeMany(
+    @Body()
+    body: {
+      taskIds?: unknown;
+    },
+  ) {
+    const taskIds = this.validateCompleteManyInput(body);
+
+    return this.tasksService.completeMany(taskIds);
   }
 
   @Patch(':id')
