@@ -106,12 +106,14 @@ describe('AppController (e2e)', () => {
           title: 'Learn GH-600',
           description: 'Study Agentic AI Systems',
           completed: true,
+          priority: 'medium',
         },
         {
           id: 2,
           title: 'Write tests',
           description: undefined,
           completed: true,
+          priority: 'medium',
         },
       ]);
   });
@@ -132,6 +134,7 @@ describe('AppController (e2e)', () => {
       title: 'Learn GH-600',
       description: 'Study Agentic AI Systems',
       completed: false,
+      priority: 'medium',
     });
   });
 
@@ -145,6 +148,7 @@ describe('AppController (e2e)', () => {
           title: 'Learn GH-600',
           description: 'Study Agentic AI Systems',
           completed: false,
+          priority: 'medium',
         },
       ]);
   });
@@ -166,6 +170,7 @@ describe('AppController (e2e)', () => {
       .send({
         title: 'Write tests',
         description: 'Add validation coverage',
+        priority: 'high',
       })
       .expect(201)
       .expect({
@@ -173,6 +178,21 @@ describe('AppController (e2e)', () => {
         title: 'Write tests',
         description: 'Add validation coverage',
         completed: false,
+        priority: 'high',
+      });
+  });
+
+  it('/tasks (POST) defaults priority to medium when omitted', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Write tests' })
+      .expect(201)
+      .expect({
+        id: 2,
+        title: 'Write tests',
+        description: undefined,
+        completed: false,
+        priority: 'medium',
       });
   });
 
@@ -196,6 +216,7 @@ describe('AppController (e2e)', () => {
       .send({
         title: 'Updated GH-600',
         completed: true,
+        priority: 'high',
       })
       .expect(200)
       .expect({
@@ -203,6 +224,7 @@ describe('AppController (e2e)', () => {
         title: 'Updated GH-600',
         description: 'Study Agentic AI Systems',
         completed: true,
+        priority: 'high',
       });
   });
 
@@ -213,12 +235,29 @@ describe('AppController (e2e)', () => {
       .expect(400);
   });
 
+  it('/tasks?priority=high (GET) filters by priority', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'High priority task', priority: 'high' })
+      .expect(201)
+      .then(() =>
+        request(app.getHttpServer()).get('/tasks?priority=high').expect(200),
+      );
+  });
+
+  it('/tasks?priority=urgent (GET) rejects invalid priority query', () => {
+    return request(app.getHttpServer())
+      .get('/tasks?priority=urgent')
+      .expect(400);
+  });
+
   it('/tasks/:id (DELETE)', () => {
     return request(app.getHttpServer()).delete('/tasks/1').expect(200).expect({
       id: 1,
       title: 'Learn GH-600',
       description: 'Study Agentic AI Systems',
       completed: false,
+      priority: 'medium',
     });
   });
 });

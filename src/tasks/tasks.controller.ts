@@ -9,15 +9,48 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { DEFAULT_TASK_PRIORITY, TASK_PRIORITIES, TaskPriority } from './task';
 import { TasksService } from './tasks.service';
 
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
+  private validatePriorityValue(
+    priority: unknown,
+    fieldName = 'Task priority',
+  ): TaskPriority {
+    if (priority === undefined) {
+      return DEFAULT_TASK_PRIORITY;
+    }
+
+    if (typeof priority !== 'string') {
+      throw new BadRequestException(
+        `${fieldName} must be one of: low, medium, high`,
+      );
+    }
+
+    const normalizedPriority = priority.trim();
+
+    if (normalizedPriority === '') {
+      throw new BadRequestException(
+        `${fieldName} must be one of: low, medium, high`,
+      );
+    }
+
+    if (!TASK_PRIORITIES.includes(normalizedPriority as TaskPriority)) {
+      throw new BadRequestException(
+        `${fieldName} must be one of: low, medium, high`,
+      );
+    }
+
+    return normalizedPriority as TaskPriority;
+  }
+
   private validateCreateTaskInput(body: {
     title?: unknown;
     description?: unknown;
+    priority?: unknown;
   }): void {
     if (body.title === undefined) {
       throw new BadRequestException('Task title is required');
@@ -37,12 +70,17 @@ export class TasksController {
     ) {
       throw new BadRequestException('Task description must be a string');
     }
+
+    if (body.priority !== undefined) {
+      this.validatePriorityValue(body.priority);
+    }
   }
 
   private validateUpdateTaskInput(body: {
     title?: unknown;
     description?: unknown;
     completed?: unknown;
+    priority?: unknown;
   }): void {
     if (body.title !== undefined) {
       if (typeof body.title !== 'string') {
@@ -63,6 +101,10 @@ export class TasksController {
 
     if (body.completed !== undefined && typeof body.completed !== 'boolean') {
       throw new BadRequestException('Task completed must be a boolean');
+    }
+
+    if (body.priority !== undefined) {
+      this.validatePriorityValue(body.priority);
     }
   }
 
@@ -120,18 +162,27 @@ export class TasksController {
   }
 
   @Get()
-  findAll(@Query('completed') completed?: string) {
-    if (completed === undefined) {
-      return this.tasksService.findAll();
-    }
-
-    if (completed !== 'true' && completed !== 'false') {
+  findAll(
+    @Query('completed') completed?: string,
+    @Query('priority') priority?: string,
+  ) {
+    if (
+      completed !== undefined &&
+      completed !== 'true' &&
+      completed !== 'false'
+    ) {
       throw new BadRequestException(
         'The completed query parameter must be true or false',
       );
     }
 
-    return this.tasksService.findAll(completed === 'true');
+    const normalizedPriority =
+      priority === undefined ? undefined : this.validatePriorityValue(priority);
+
+    return this.tasksService.findAll(
+      completed === undefined ? undefined : completed === 'true',
+      normalizedPriority,
+    );
   }
 
   @Get(':id')
@@ -145,6 +196,7 @@ export class TasksController {
     body: {
       title?: unknown;
       description?: unknown;
+      priority?: unknown;
     },
   ) {
     this.validateCreateTaskInput(body);
@@ -152,6 +204,9 @@ export class TasksController {
     return this.tasksService.create(
       body.title as string,
       body.description as string | undefined,
+      body.priority === undefined
+        ? DEFAULT_TASK_PRIORITY
+        : this.validatePriorityValue(body.priority),
     );
   }
 
@@ -175,6 +230,7 @@ export class TasksController {
       title?: unknown;
       description?: unknown;
       completed?: unknown;
+      priority?: unknown;
     },
   ) {
     this.validateUpdateTaskInput(body);
@@ -185,6 +241,7 @@ export class TasksController {
         title?: string;
         description?: string;
         completed?: boolean;
+        priority?: TaskPriority;
       },
     );
   }
