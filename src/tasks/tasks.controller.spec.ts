@@ -24,6 +24,12 @@ describe('TasksController', () => {
     );
   });
 
+  it('should reject invalid priority filters', () => {
+    expect(() => controller.findAll(undefined, 'urgent')).toThrow(
+      'Task priority must be one of: low, medium, high',
+    );
+  });
+
   it('should return task statistics', () => {
     expect(controller.stats()).toEqual({
       total: 1,
@@ -48,6 +54,7 @@ describe('TasksController', () => {
         title: 'Learn GH-600',
         description: 'Study Agentic AI Systems',
         completed: true,
+        priority: 'medium',
       },
     ]);
   });
@@ -83,6 +90,7 @@ describe('TasksController', () => {
         title: 'Learn GH-600',
         description: 'Study Agentic AI Systems',
         completed: false,
+        priority: 'medium',
       },
     ]);
   });
@@ -135,6 +143,12 @@ describe('TasksController', () => {
     ).toThrow('Task description must be a string');
   });
 
+  it('should reject creating a task with an invalid priority', () => {
+    expect(() =>
+      controller.create({ title: 'Study', priority: 'urgent' as any }),
+    ).toThrow('Task priority must be one of: low, medium, high');
+  });
+
   it('should reject updating a task with a non-string title', () => {
     expect(() => controller.update('1', { title: 123 as any })).toThrow(
       'Task title must be a string',
@@ -159,12 +173,19 @@ describe('TasksController', () => {
     );
   });
 
+  it('should reject updating a task with an invalid priority', () => {
+    expect(() => controller.update('1', { priority: 'HIGH' as any })).toThrow(
+      'Task priority must be one of: low, medium, high',
+    );
+  });
+
   it('should delete a task', () => {
     expect(controller.remove('1')).toEqual({
       id: 1,
       title: 'Learn GH-600',
       description: 'Study Agentic AI Systems',
       completed: false,
+      priority: 'medium',
     });
   });
 
@@ -174,6 +195,7 @@ describe('TasksController', () => {
       title: 'Updated task title',
       description: 'Study Agentic AI Systems',
       completed: false,
+      priority: 'medium',
     });
   });
 

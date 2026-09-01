@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Task } from './task';
+import { DEFAULT_TASK_PRIORITY, Task, TaskPriority } from './task';
 
 @Injectable()
 export class TasksService {
@@ -9,21 +9,35 @@ export class TasksService {
       title: 'Learn GH-600',
       description: 'Study Agentic AI Systems',
       completed: false,
+      priority: DEFAULT_TASK_PRIORITY,
     },
   ];
 
-  findAll(completed?: boolean): Task[] {
-    if (completed === undefined) {
-      return this.tasks;
+  private ensureTaskPriority(task: Partial<Task>): Task {
+    if (task.priority === undefined) {
+      task.priority = DEFAULT_TASK_PRIORITY;
     }
 
-    return this.tasks.filter((task) => task.completed === completed);
+    return task as Task;
+  }
+
+  findAll(completed?: boolean, priority?: TaskPriority): Task[] {
+    return this.tasks.filter((task) => {
+      const ensuredTask = this.ensureTaskPriority(task);
+      const matchesCompleted =
+        completed === undefined || ensuredTask.completed === completed;
+      const matchesPriority =
+        priority === undefined || ensuredTask.priority === priority;
+
+      return matchesCompleted && matchesPriority;
+    });
   }
 
   search(query: string): Task[] {
     const normalizedQuery = query.trim().toLowerCase();
 
     return this.tasks.filter((task) => {
+      this.ensureTaskPriority(task);
       const title = task.title.toLowerCase();
       const description = (task.description ?? '').toLowerCase();
 
@@ -34,6 +48,7 @@ export class TasksService {
   }
 
   stats(): { total: number; completed: number; incomplete: number } {
+    this.tasks.forEach((task) => this.ensureTaskPriority(task));
     const completed = this.tasks.filter((task) => task.completed).length;
 
     return {
@@ -68,28 +83,41 @@ export class TasksService {
       throw new NotFoundException(`Task ${id} not found`);
     }
 
-    return task;
+    return this.ensureTaskPriority(task);
   }
 
-  create(title: string, description?: string): Task {
+  create(
+    title: string,
+    description?: string,
+    priority: TaskPriority = DEFAULT_TASK_PRIORITY,
+  ): Task {
     const task: Task = {
       id: this.tasks.length + 1,
       title,
       description,
       completed: false,
+      priority,
     };
 
     this.tasks.push(task);
 
-    return task;
+    return this.ensureTaskPriority(task);
   }
 
   update(id: number, updates: Partial<Task>): Task {
     const task = this.findOne(id);
 
     Object.assign(task, updates);
+    const storedTask = this.tasks.find((entry) => entry.id === id);
 
-    return task;
+    if (storedTask) {
+      Object.assign(storedTask, updates);
+      if (storedTask.priority === undefined) {
+        storedTask.priority = DEFAULT_TASK_PRIORITY;
+      }
+    }
+
+    return this.ensureTaskPriority(task);
   }
 
   completeMany(taskIds: number[]): Task[] {
@@ -101,10 +129,14 @@ export class TasksService {
     const tasksToUpdate = uniqueTaskIds.map((id) => this.findOne(id));
 
     tasksToUpdate.forEach((task) => {
+      const storedTask = this.tasks.find((entry) => entry.id === task.id);
+      if (storedTask) {
+        storedTask.completed = true;
+      }
       task.completed = true;
     });
 
-    return tasksToUpdate;
+    return tasksToUpdate.map((task) => this.ensureTaskPriority(task));
   }
 
   remove(id: number): Task {
@@ -115,6 +147,6 @@ export class TasksService {
     }
 
     const [removedTask] = this.tasks.splice(taskIndex, 1);
-    return removedTask;
+    return this.ensureTaskPriority(removedTask);
   }
 }

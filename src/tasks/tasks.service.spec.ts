@@ -17,6 +17,7 @@ describe('TasksService', () => {
 
     expect(tasks).toHaveLength(1);
     expect(tasks[0].title).toBe('Learn GH-600');
+    expect(tasks[0].priority).toBe('medium');
   });
 
   it('should return completed tasks when filtered', () => {
@@ -33,6 +34,14 @@ describe('TasksService', () => {
 
     expect(tasks).toHaveLength(1);
     expect(tasks[0].completed).toBe(false);
+  });
+
+  it('should return tasks by priority', () => {
+    service.create('Study MCP', undefined, 'high');
+    service.create('Write docs', undefined, 'low');
+
+    expect(service.findAll(undefined, 'high')).toHaveLength(1);
+    expect(service.findAll(undefined, 'high')[0].title).toBe('Study MCP');
   });
 
   it('should return task statistics', () => {
@@ -95,12 +104,14 @@ describe('TasksService', () => {
         title: 'Write docs',
         description: undefined,
         completed: true,
+        priority: 'medium',
       },
       {
         id: 1,
         title: 'Learn GH-600',
         description: 'Study Agentic AI Systems',
         completed: true,
+        priority: 'medium',
       },
     ]);
     expect(service.findAll(true)).toHaveLength(2);
@@ -153,12 +164,14 @@ describe('TasksService', () => {
         title: 'Learn GH-600',
         description: 'Study Agentic AI Systems',
         completed: true,
+        priority: 'medium',
       },
       {
         id: 2,
         title: 'Study MCP',
         description: undefined,
         completed: true,
+        priority: 'medium',
       },
     ]);
   });
@@ -172,6 +185,7 @@ describe('TasksService', () => {
         title: 'Build a demo app',
         description: undefined,
         completed: false,
+        priority: 'medium',
       },
     ]);
   });
@@ -185,6 +199,7 @@ describe('TasksService', () => {
         title: 'Write docs',
         description: 'Plan onboarding and release notes',
         completed: false,
+        priority: 'medium',
       },
     ]);
   });
@@ -198,6 +213,7 @@ describe('TasksService', () => {
         title: 'Ship Release Candidate',
         description: undefined,
         completed: false,
+        priority: 'medium',
       },
     ]);
   });
@@ -221,6 +237,7 @@ describe('TasksService', () => {
       title: 'Updated task title',
       description: 'Study Agentic AI Systems',
       completed: false,
+      priority: 'medium',
     });
     expect(service.findOne(1).description).toBe('Study Agentic AI Systems');
   });
@@ -273,10 +290,37 @@ describe('TasksService', () => {
     });
   });
 
-  it('should create a task', () => {
+  it('should create a task without a priority as medium', () => {
     const task = service.create('Study MCP');
 
     expect(task.title).toBe('Study MCP');
     expect(task.completed).toBe(false);
+    expect(task.priority).toBe('medium');
+  });
+
+  it('should create a task with an explicit priority', () => {
+    const task = service.create('Study MCP', undefined, 'high');
+
+    expect(task.priority).toBe('high');
+  });
+
+  it('should update a task priority without overwriting other fields', () => {
+    const task = service.update(1, { priority: 'high' });
+
+    expect(task.priority).toBe('high');
+    expect(task.title).toBe('Learn GH-600');
+  });
+
+  it('should treat historical tasks without priority as medium', () => {
+    const legacyTask = {
+      id: 99,
+      title: 'Legacy task',
+      description: 'Old data',
+      completed: false,
+    } as any;
+
+    service['tasks'].push(legacyTask);
+
+    expect(service.findAll(undefined, 'medium')).toHaveLength(2);
   });
 });
