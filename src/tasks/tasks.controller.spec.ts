@@ -41,6 +41,41 @@ describe('TasksController', () => {
     });
   });
 
+  it('should delegate a valid bulk completion request', () => {
+    expect(controller.completeMany({ taskIds: [1] })).toEqual([
+      {
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: true,
+      },
+    ]);
+  });
+
+  it('should reject a bulk completion request without taskIds', () => {
+    expect(() => controller.completeMany({} as any)).toThrow(
+      'Task IDs are required',
+    );
+  });
+
+  it('should reject a bulk completion request with non-array taskIds', () => {
+    expect(() => controller.completeMany({ taskIds: '1' as any })).toThrow(
+      'Task IDs must be an array of numbers',
+    );
+  });
+
+  it('should reject a bulk completion request with invalid IDs', () => {
+    expect(() => controller.completeMany({ taskIds: [1, '2'] as any })).toThrow(
+      'Task IDs must be an array of numbers',
+    );
+  });
+
+  it('should reject an empty bulk completion array', () => {
+    expect(() => controller.completeMany({ taskIds: [] })).toThrow(
+      'Task IDs must not be empty',
+    );
+  });
+
   it('should search tasks with a valid query', () => {
     expect(controller.search('GH-600')).toEqual([
       {

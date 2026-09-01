@@ -92,6 +92,21 @@ export class TasksService {
     return task;
   }
 
+  completeMany(taskIds: number[]): Task[] {
+    if (taskIds.length === 0) {
+      throw new NotFoundException('Task IDs must not be empty');
+    }
+
+    const uniqueTaskIds = [...new Set(taskIds)];
+    const tasksToUpdate = uniqueTaskIds.map((id) => this.findOne(id));
+
+    tasksToUpdate.forEach((task) => {
+      task.completed = true;
+    });
+
+    return tasksToUpdate;
+  }
+
   remove(id: number): Task {
     const taskIndex = this.tasks.findIndex((task) => task.id === id);
 

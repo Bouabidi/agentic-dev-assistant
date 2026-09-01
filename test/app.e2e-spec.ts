@@ -90,6 +90,51 @@ describe('AppController (e2e)', () => {
       });
   });
 
+  it('/tasks/complete (PATCH) marks multiple tasks completed', async () => {
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Write tests' })
+      .expect(201);
+
+    return request(app.getHttpServer())
+      .patch('/tasks/complete')
+      .send({ taskIds: [1, 2] })
+      .expect(200)
+      .expect([
+        {
+          id: 1,
+          title: 'Learn GH-600',
+          description: 'Study Agentic AI Systems',
+          completed: true,
+        },
+        {
+          id: 2,
+          title: 'Write tests',
+          description: undefined,
+          completed: true,
+        },
+      ]);
+  });
+
+  it('/tasks/complete (PATCH) rejects a missing ID without mutating valid tasks', async () => {
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Write tests' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch('/tasks/complete')
+      .send({ taskIds: [1, 999] })
+      .expect(404);
+
+    return request(app.getHttpServer()).get('/tasks/1').expect(200).expect({
+      id: 1,
+      title: 'Learn GH-600',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+    });
+  });
+
   it('/tasks/search (GET) returns matching tasks', () => {
     return request(app.getHttpServer())
       .get('/tasks/search?q=GH-600')

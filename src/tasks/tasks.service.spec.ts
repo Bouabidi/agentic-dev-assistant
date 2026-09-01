@@ -83,6 +83,86 @@ describe('TasksService', () => {
     });
   });
 
+  it('should bulk complete multiple tasks and preserve requested order', () => {
+    service.create('Study MCP');
+    service.create('Write docs');
+
+    const updated = service.completeMany([3, 1]);
+
+    expect(updated).toEqual([
+      {
+        id: 3,
+        title: 'Write docs',
+        description: undefined,
+        completed: true,
+      },
+      {
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: true,
+      },
+    ]);
+    expect(service.findAll(true)).toHaveLength(2);
+  });
+
+  it('should throw when a bulk completion request includes a missing task ID', () => {
+    service.create('Study MCP');
+
+    expect(() => service.completeMany([1, 999])).toThrow('Task 999 not found');
+    expect(service.findOne(1).completed).toBe(false);
+  });
+
+  it('should be atomic when one bulk completion ID is missing', () => {
+    service.create('Study MCP');
+    service.create('Write docs');
+
+    expect(() => service.completeMany([1, 999, 2])).toThrow(
+      'Task 999 not found',
+    );
+    expect(service.findAll(true)).toHaveLength(0);
+    expect(service.findAll(false)).toHaveLength(3);
+  });
+
+  it('should reject an empty bulk completion input', () => {
+    expect(() => service.completeMany([])).toThrow(
+      'Task IDs must not be empty',
+    );
+  });
+
+  it('should resolve duplicate IDs without changing the update semantics', () => {
+    service.create('Study MCP');
+    service.create('Write docs');
+
+    const updated = service.completeMany([2, 2, 1]);
+
+    expect(updated.map((task) => task.id)).toEqual([2, 1]);
+    expect(service.findOne(1).completed).toBe(true);
+    expect(service.findOne(2).completed).toBe(true);
+  });
+
+  it('should keep already-completed tasks completed during bulk completion', () => {
+    service.update(1, { completed: true });
+    service.create('Study MCP');
+
+    const updated = service.completeMany([1, 2]);
+
+    expect(updated).toEqual([
+      {
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: true,
+      },
+      {
+        id: 2,
+        title: 'Study MCP',
+        description: undefined,
+        completed: true,
+      },
+    ]);
+  });
+
   it('should find tasks by title', () => {
     service.create('Build a demo app');
 
