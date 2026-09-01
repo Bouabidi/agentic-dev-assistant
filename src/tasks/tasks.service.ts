@@ -43,6 +43,24 @@ export class TasksService {
     };
   }
 
+  summary(): {
+    total: number;
+    completed: number;
+    incomplete: number;
+    completionPercentage: number;
+  } {
+    const { total, completed, incomplete } = this.stats();
+    const completionPercentage =
+      total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    return {
+      total,
+      completed,
+      incomplete,
+      completionPercentage,
+    };
+  }
+
   findOne(id: number): Task {
     const task = this.tasks.find((task) => task.id === id);
 

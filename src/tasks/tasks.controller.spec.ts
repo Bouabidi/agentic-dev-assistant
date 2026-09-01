@@ -32,6 +32,15 @@ describe('TasksController', () => {
     });
   });
 
+  it('should return a task summary', () => {
+    expect(controller.summary()).toEqual({
+      total: 1,
+      completed: 0,
+      incomplete: 1,
+      completionPercentage: 0,
+    });
+  });
+
   it('should search tasks with a valid query', () => {
     expect(controller.search('GH-600')).toEqual([
       {

@@ -71,6 +71,11 @@ export class TasksController {
     return this.tasksService.stats();
   }
 
+  @Get('summary')
+  summary() {
+    return this.tasksService.summary();
+  }
+
   @Get('search')
   search(@Query('q') q?: string) {
     if (q === undefined) {
