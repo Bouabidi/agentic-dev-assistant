@@ -30,6 +30,66 @@ describe('AppController (e2e)', () => {
     });
   });
 
+  it('/tasks/summary (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/tasks/summary')
+      .expect(200)
+      .expect({
+        total: 1,
+        completed: 0,
+        incomplete: 1,
+        completionPercentage: 0,
+      });
+  });
+
+  it('/tasks/summary (GET) reflects task creation', async () => {
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Write tests' })
+      .expect(201);
+
+    return request(app.getHttpServer())
+      .get('/tasks/summary')
+      .expect(200)
+      .expect({
+        total: 2,
+        completed: 0,
+        incomplete: 2,
+        completionPercentage: 0,
+      });
+  });
+
+  it('/tasks/summary (GET) reflects completion updates', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ completed: true })
+      .expect(200);
+
+    return request(app.getHttpServer())
+      .get('/tasks/summary')
+      .expect(200)
+      .expect({
+        total: 1,
+        completed: 1,
+        incomplete: 0,
+        completionPercentage: 100,
+      });
+  });
+
+  it('/tasks/summary (GET) reflects task deletion', async () => {
+    await request(app.getHttpServer()).delete('/tasks/1').expect(200);
+
+    return request(app.getHttpServer())
+      .get('/tasks/summary')
+      .expect(200)
+      .expect({
+        total: 0,
+        completed: 0,
+        incomplete: 0,
+        completionPercentage: 0,
+      });
+  });
+
   it('/tasks/search (GET) returns matching tasks', () => {
     return request(app.getHttpServer())
       .get('/tasks/search?q=GH-600')

@@ -43,6 +43,46 @@ describe('TasksService', () => {
     });
   });
 
+  it('should return a task summary with completion percentage', () => {
+    service.create('Study MCP');
+    service.update(1, { completed: true });
+
+    expect(service.summary()).toEqual({
+      total: 2,
+      completed: 1,
+      incomplete: 1,
+      completionPercentage: 50,
+    });
+  });
+
+  it('should return a zero summary when there are no tasks', () => {
+    service.remove(1);
+
+    const summary = service.summary();
+
+    expect(summary).toEqual({
+      total: 0,
+      completed: 0,
+      incomplete: 0,
+      completionPercentage: 0,
+    });
+    expect(Number.isFinite(summary.completionPercentage)).toBe(true);
+    expect(Number.isNaN(summary.completionPercentage)).toBe(false);
+  });
+
+  it('should update the task summary after deleting a task', () => {
+    service.create('Study MCP');
+    service.update(1, { completed: true });
+    service.remove(2);
+
+    expect(service.summary()).toEqual({
+      total: 1,
+      completed: 1,
+      incomplete: 0,
+      completionPercentage: 100,
+    });
+  });
+
   it('should find tasks by title', () => {
     service.create('Build a demo app');
 
