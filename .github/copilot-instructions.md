@@ -75,6 +75,8 @@ Never:
 - disable security controls
 - bypass required reviews
 
+The configured GitHub MCP connection is read-only and does not grant write or administrative GitHub access. GitHub write operations such as commits, pushes, pull requests, merges, issue creation, and destructive operations require explicit human authority and approval.
+
 Do not access production resources unless explicitly authorized.
 
 ## Agent Behavior
