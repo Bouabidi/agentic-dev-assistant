@@ -90,6 +90,7 @@ export class TasksService {
     title: string,
     description?: string,
     priority: TaskPriority = DEFAULT_TASK_PRIORITY,
+    dueDate?: string,
   ): Task {
     const task: Task = {
       id: this.tasks.length + 1,
@@ -97,6 +98,7 @@ export class TasksService {
       description,
       completed: false,
       priority,
+      dueDate,
     };
 
     this.tasks.push(task);

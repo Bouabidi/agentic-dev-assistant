@@ -196,6 +196,60 @@ describe('AppController (e2e)', () => {
       });
   });
 
+  it('/tasks (POST) accepts a valid dueDate', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({
+        title: 'Write tests',
+        dueDate: '2026-09-02T12:00:00.000Z',
+      })
+      .expect(201)
+      .expect({
+        id: 2,
+        title: 'Write tests',
+        description: undefined,
+        completed: false,
+        priority: 'medium',
+        dueDate: '2026-09-02T12:00:00.000Z',
+      });
+  });
+
+  it('/tasks (POST) rejects invalid dueDate', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Write tests', dueDate: 'not-a-date' })
+      .expect(400);
+  });
+
+  it('/tasks (POST) rejects empty-string dueDate', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Write tests', dueDate: '' })
+      .expect(400);
+  });
+
+  it('/tasks/:id (PATCH) supports dueDate updates', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ dueDate: '2027-01-15T09:30:00.000Z' })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+        dueDate: '2027-01-15T09:30:00.000Z',
+      });
+  });
+
+  it('/tasks/:id (PATCH) rejects invalid dueDate', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ dueDate: 'invalid-date' })
+      .expect(400);
+  });
+
   it('/tasks (POST) rejects missing title', () => {
     return request(app.getHttpServer())
       .post('/tasks')
