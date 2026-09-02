@@ -298,6 +298,27 @@ describe('TasksService', () => {
     expect(task.priority).toBe('medium');
   });
 
+  it('should create a task with a dueDate', () => {
+    const task = service.create(
+      'Study MCP',
+      undefined,
+      'high',
+      '2026-09-02T12:00:00.000Z',
+    );
+
+    expect(task.dueDate).toBe('2026-09-02T12:00:00.000Z');
+  });
+
+  it('should update a task dueDate without overwriting other fields', () => {
+    const task = service.update(1, {
+      dueDate: '2026-12-31T23:59:59.000Z',
+    });
+
+    expect(task.dueDate).toBe('2026-12-31T23:59:59.000Z');
+    expect(task.title).toBe('Learn GH-600');
+    expect(task.description).toBe('Study Agentic AI Systems');
+  });
+
   it('should create a task with an explicit priority', () => {
     const task = service.create('Study MCP', undefined, 'high');
 

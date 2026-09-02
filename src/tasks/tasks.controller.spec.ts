@@ -149,6 +149,40 @@ describe('TasksController', () => {
     ).toThrow('Task priority must be one of: low, medium, high');
   });
 
+  it('should accept a valid dueDate when creating a task', () => {
+    expect(
+      controller.create({
+        title: 'Study due date',
+        dueDate: '2026-09-02T12:00:00.000Z',
+      }),
+    ).toEqual({
+      id: 2,
+      title: 'Study due date',
+      description: undefined,
+      completed: false,
+      priority: 'medium',
+      dueDate: '2026-09-02T12:00:00.000Z',
+    });
+  });
+
+  it('should reject an invalid dueDate when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study due date',
+        dueDate: 'not-a-date',
+      }),
+    ).toThrow('Task dueDate must be a valid ISO date or datetime');
+  });
+
+  it('should reject an empty-string dueDate when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study due date',
+        dueDate: '',
+      }),
+    ).toThrow('Task dueDate must be a valid ISO date or datetime');
+  });
+
   it('should reject updating a task with a non-string title', () => {
     expect(() => controller.update('1', { title: 123 as any })).toThrow(
       'Task title must be a string',
@@ -177,6 +211,37 @@ describe('TasksController', () => {
     expect(() => controller.update('1', { priority: 'HIGH' as any })).toThrow(
       'Task priority must be one of: low, medium, high',
     );
+  });
+
+  it('should accept a valid dueDate when updating a task', () => {
+    expect(
+      controller.update('1', {
+        dueDate: '2027-01-15T09:30:00.000Z',
+      }),
+    ).toEqual({
+      id: 1,
+      title: 'Learn GH-600',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+      priority: 'medium',
+      dueDate: '2027-01-15T09:30:00.000Z',
+    });
+  });
+
+  it('should reject an invalid dueDate when updating a task', () => {
+    expect(() =>
+      controller.update('1', {
+        dueDate: 'invalid-date',
+      }),
+    ).toThrow('Task dueDate must be a valid ISO date or datetime');
+  });
+
+  it('should reject an empty-string dueDate when updating a task', () => {
+    expect(() =>
+      controller.update('1', {
+        dueDate: '',
+      }),
+    ).toThrow('Task dueDate must be a valid ISO date or datetime');
   });
 
   it('should delete a task', () => {

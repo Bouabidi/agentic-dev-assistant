@@ -47,10 +47,33 @@ export class TasksController {
     return normalizedPriority as TaskPriority;
   }
 
+  private validateDueDateValue(dueDate: unknown): string | undefined {
+    if (dueDate === undefined) {
+      return undefined;
+    }
+
+    if (typeof dueDate !== 'string') {
+      throw new BadRequestException(
+        'Task dueDate must be a valid ISO date or datetime',
+      );
+    }
+
+    const trimmedDueDate = dueDate.trim();
+
+    if (trimmedDueDate === '' || Number.isNaN(Date.parse(trimmedDueDate))) {
+      throw new BadRequestException(
+        'Task dueDate must be a valid ISO date or datetime',
+      );
+    }
+
+    return trimmedDueDate;
+  }
+
   private validateCreateTaskInput(body: {
     title?: unknown;
     description?: unknown;
     priority?: unknown;
+    dueDate?: unknown;
   }): void {
     if (body.title === undefined) {
       throw new BadRequestException('Task title is required');
@@ -74,6 +97,10 @@ export class TasksController {
     if (body.priority !== undefined) {
       this.validatePriorityValue(body.priority);
     }
+
+    if (body.dueDate !== undefined) {
+      this.validateDueDateValue(body.dueDate);
+    }
   }
 
   private validateUpdateTaskInput(body: {
@@ -81,6 +108,7 @@ export class TasksController {
     description?: unknown;
     completed?: unknown;
     priority?: unknown;
+    dueDate?: unknown;
   }): void {
     if (body.title !== undefined) {
       if (typeof body.title !== 'string') {
@@ -105,6 +133,10 @@ export class TasksController {
 
     if (body.priority !== undefined) {
       this.validatePriorityValue(body.priority);
+    }
+
+    if (body.dueDate !== undefined) {
+      this.validateDueDateValue(body.dueDate);
     }
   }
 
@@ -197,6 +229,7 @@ export class TasksController {
       title?: unknown;
       description?: unknown;
       priority?: unknown;
+      dueDate?: unknown;
     },
   ) {
     this.validateCreateTaskInput(body);
@@ -207,6 +240,7 @@ export class TasksController {
       body.priority === undefined
         ? DEFAULT_TASK_PRIORITY
         : this.validatePriorityValue(body.priority),
+      this.validateDueDateValue(body.dueDate),
     );
   }
 
@@ -231,6 +265,7 @@ export class TasksController {
       description?: unknown;
       completed?: unknown;
       priority?: unknown;
+      dueDate?: unknown;
     },
   ) {
     this.validateUpdateTaskInput(body);
@@ -242,6 +277,7 @@ export class TasksController {
         description?: string;
         completed?: boolean;
         priority?: TaskPriority;
+        dueDate?: string;
       },
     );
   }
