@@ -69,11 +69,38 @@ export class TasksController {
     return trimmedDueDate;
   }
 
+  private validateTagsValue(tags: unknown): string[] | undefined {
+    if (tags === undefined) {
+      return undefined;
+    }
+
+    if (!Array.isArray(tags)) {
+      throw new BadRequestException('Task tags must be an array of strings');
+    }
+
+    const validatedTags = tags.map((tag) => {
+      if (typeof tag !== 'string') {
+        throw new BadRequestException('Task tags must be an array of strings');
+      }
+
+      const trimmedTag = tag.trim();
+
+      if (trimmedTag === '') {
+        throw new BadRequestException('Task tags must be an array of strings');
+      }
+
+      return trimmedTag;
+    });
+
+    return validatedTags;
+  }
+
   private validateCreateTaskInput(body: {
     title?: unknown;
     description?: unknown;
     priority?: unknown;
     dueDate?: unknown;
+    tags?: unknown;
   }): void {
     if (body.title === undefined) {
       throw new BadRequestException('Task title is required');
@@ -101,6 +128,10 @@ export class TasksController {
     if (body.dueDate !== undefined) {
       this.validateDueDateValue(body.dueDate);
     }
+
+    if (body.tags !== undefined) {
+      this.validateTagsValue(body.tags);
+    }
   }
 
   private validateUpdateTaskInput(body: {
@@ -109,6 +140,7 @@ export class TasksController {
     completed?: unknown;
     priority?: unknown;
     dueDate?: unknown;
+    tags?: unknown;
   }): void {
     if (body.title !== undefined) {
       if (typeof body.title !== 'string') {
@@ -137,6 +169,10 @@ export class TasksController {
 
     if (body.dueDate !== undefined) {
       this.validateDueDateValue(body.dueDate);
+    }
+
+    if (body.tags !== undefined) {
+      this.validateTagsValue(body.tags);
     }
   }
 
@@ -197,6 +233,7 @@ export class TasksController {
   findAll(
     @Query('completed') completed?: string,
     @Query('priority') priority?: string,
+    @Query('tag') tag?: string,
   ) {
     if (
       completed !== undefined &&
@@ -208,12 +245,25 @@ export class TasksController {
       );
     }
 
+    if (tag !== undefined) {
+      if (typeof tag !== 'string') {
+        throw new BadRequestException('Tag query must be a non-empty string');
+      }
+
+      const trimmedTag = tag.trim();
+
+      if (trimmedTag === '') {
+        throw new BadRequestException('Tag query must be a non-empty string');
+      }
+    }
+
     const normalizedPriority =
       priority === undefined ? undefined : this.validatePriorityValue(priority);
 
     return this.tasksService.findAll(
       completed === undefined ? undefined : completed === 'true',
       normalizedPriority,
+      tag === undefined ? undefined : tag.trim(),
     );
   }
 
@@ -230,6 +280,7 @@ export class TasksController {
       description?: unknown;
       priority?: unknown;
       dueDate?: unknown;
+      tags?: unknown;
     },
   ) {
     this.validateCreateTaskInput(body);
@@ -241,6 +292,7 @@ export class TasksController {
         ? DEFAULT_TASK_PRIORITY
         : this.validatePriorityValue(body.priority),
       this.validateDueDateValue(body.dueDate),
+      this.validateTagsValue(body.tags),
     );
   }
 
@@ -266,6 +318,7 @@ export class TasksController {
       completed?: unknown;
       priority?: unknown;
       dueDate?: unknown;
+      tags?: unknown;
     },
   ) {
     this.validateUpdateTaskInput(body);
@@ -278,6 +331,7 @@ export class TasksController {
         completed?: boolean;
         priority?: TaskPriority;
         dueDate?: string;
+        tags?: string[];
       },
     );
   }

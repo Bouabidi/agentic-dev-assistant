@@ -21,15 +21,22 @@ export class TasksService {
     return task as Task;
   }
 
-  findAll(completed?: boolean, priority?: TaskPriority): Task[] {
+  findAll(
+    completed?: boolean,
+    priority?: TaskPriority,
+    tag?: string,
+  ): Task[] {
     return this.tasks.filter((task) => {
       const ensuredTask = this.ensureTaskPriority(task);
       const matchesCompleted =
         completed === undefined || ensuredTask.completed === completed;
       const matchesPriority =
         priority === undefined || ensuredTask.priority === priority;
+      const matchesTag =
+        tag === undefined ||
+        (Array.isArray(ensuredTask.tags) && ensuredTask.tags.includes(tag));
 
-      return matchesCompleted && matchesPriority;
+      return matchesCompleted && matchesPriority && matchesTag;
     });
   }
 
@@ -91,6 +98,7 @@ export class TasksService {
     description?: string,
     priority: TaskPriority = DEFAULT_TASK_PRIORITY,
     dueDate?: string,
+    tags?: string[],
   ): Task {
     const task: Task = {
       id: this.tasks.length + 1,
@@ -99,6 +107,7 @@ export class TasksService {
       completed: false,
       priority,
       dueDate,
+      tags,
     };
 
     this.tasks.push(task);
