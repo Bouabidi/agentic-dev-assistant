@@ -149,6 +149,58 @@ describe('TasksController', () => {
     ).toThrow('Task priority must be one of: low, medium, high');
   });
 
+  it('should accept valid tags when creating a task', () => {
+    expect(
+      controller.create({
+        title: 'Study tags',
+        tags: ['backend', 'urgent'],
+      }),
+    ).toEqual({
+      id: 2,
+      title: 'Study tags',
+      description: undefined,
+      completed: false,
+      priority: 'medium',
+      tags: ['backend', 'urgent'],
+    });
+  });
+
+  it('should reject a non-array tags payload when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study tags',
+        tags: 'backend' as any,
+      }),
+    ).toThrow('Task tags must be an array of strings');
+  });
+
+  it('should reject non-string tag values when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study tags',
+        tags: ['backend', 7] as any,
+      }),
+    ).toThrow('Task tags must be an array of strings');
+  });
+
+  it('should reject empty-string tag values when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study tags',
+        tags: ['backend', ''],
+      }),
+    ).toThrow('Task tags must be an array of strings');
+  });
+
+  it('should reject whitespace-only tag values when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study tags',
+        tags: ['backend', '   '],
+      }),
+    ).toThrow('Task tags must be an array of strings');
+  });
+
   it('should accept a valid dueDate when creating a task', () => {
     expect(
       controller.create({
@@ -213,6 +265,42 @@ describe('TasksController', () => {
     );
   });
 
+  it('should accept valid tags when updating a task', () => {
+    expect(
+      controller.update('1', {
+        tags: ['backend', 'urgent'],
+      }),
+    ).toEqual({
+      id: 1,
+      title: 'Learn GH-600',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+      priority: 'medium',
+      tags: ['backend', 'urgent'],
+    });
+  });
+
+  it('should preserve existing tags when a patch omits tags', () => {
+    controller.update('1', { tags: ['backend', 'urgent'] });
+
+    expect(controller.update('1', { title: 'Updated task title' })).toEqual({
+      id: 1,
+      title: 'Updated task title',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+      priority: 'medium',
+      tags: ['backend', 'urgent'],
+    });
+  });
+
+  it('should reject invalid tag arrays when updating a task', () => {
+    expect(() =>
+      controller.update('1', {
+        tags: 'backend' as any,
+      }),
+    ).toThrow('Task tags must be an array of strings');
+  });
+
   it('should accept a valid dueDate when updating a task', () => {
     expect(
       controller.update('1', {
@@ -242,6 +330,33 @@ describe('TasksController', () => {
         dueDate: '',
       }),
     ).toThrow('Task dueDate must be a valid ISO date or datetime');
+  });
+
+  it('should accept a valid tag query', () => {
+    controller.create({ title: 'Study tags', tags: ['backend', 'urgent'] });
+
+    expect(controller.findAll(undefined, undefined, 'backend')).toEqual([
+      {
+        id: 2,
+        title: 'Study tags',
+        description: undefined,
+        completed: false,
+        priority: 'medium',
+        tags: ['backend', 'urgent'],
+      },
+    ]);
+  });
+
+  it('should reject an empty tag query', () => {
+    expect(() => controller.findAll(undefined, undefined, '')).toThrow(
+      'Tag query must be a non-empty string',
+    );
+  });
+
+  it('should reject a whitespace-only tag query', () => {
+    expect(() => controller.findAll(undefined, undefined, '   ')).toThrow(
+      'Tag query must be a non-empty string',
+    );
   });
 
   it('should delete a task', () => {

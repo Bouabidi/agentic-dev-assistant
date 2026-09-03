@@ -214,6 +214,38 @@ describe('AppController (e2e)', () => {
       });
   });
 
+  it('/tasks (POST) accepts tags', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({
+        title: 'Write tests',
+        tags: ['backend', 'urgent'],
+      })
+      .expect(201)
+      .expect({
+        id: 2,
+        title: 'Write tests',
+        description: undefined,
+        completed: false,
+        priority: 'medium',
+        tags: ['backend', 'urgent'],
+      });
+  });
+
+  it('/tasks (POST) accepts no tags and preserves legacy behavior', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Write tests' })
+      .expect(201)
+      .expect({
+        id: 2,
+        title: 'Write tests',
+        description: undefined,
+        completed: false,
+        priority: 'medium',
+      });
+  });
+
   it('/tasks (POST) rejects invalid dueDate', () => {
     return request(app.getHttpServer())
       .post('/tasks')
@@ -240,6 +272,61 @@ describe('AppController (e2e)', () => {
         completed: false,
         priority: 'medium',
         dueDate: '2027-01-15T09:30:00.000Z',
+      });
+  });
+
+  it('/tasks/:id (PATCH) supports tags updates', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ tags: ['backend', 'urgent'] })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+        tags: ['backend', 'urgent'],
+      });
+  });
+
+  it('/tasks/:id (PATCH) preserves existing tags when omitted', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ tags: ['backend', 'urgent'] })
+      .expect(200);
+
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ title: 'Updated title' })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Updated title',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+        tags: ['backend', 'urgent'],
+      });
+  });
+
+  it('/tasks/:id (PATCH) clears tags when empty array is supplied', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ tags: ['backend', 'urgent'] })
+      .expect(200);
+
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ tags: [] })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+        tags: [],
       });
   });
 
@@ -303,6 +390,31 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/tasks?priority=urgent')
       .expect(400);
+  });
+
+  it('/tasks?tag=backend (GET) filters by tag', async () => {
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Tagged task', tags: ['backend', 'urgent'] })
+      .expect(201);
+
+    return request(app.getHttpServer())
+      .get('/tasks?tag=backend')
+      .expect(200)
+      .expect([
+        {
+          id: 2,
+          title: 'Tagged task',
+          description: undefined,
+          completed: false,
+          priority: 'medium',
+          tags: ['backend', 'urgent'],
+        },
+      ]);
+  });
+
+  it('/tasks?tag= (GET) rejects empty tag query', () => {
+    return request(app.getHttpServer()).get('/tasks?tag=').expect(400);
   });
 
   it('/tasks/:id (DELETE)', () => {

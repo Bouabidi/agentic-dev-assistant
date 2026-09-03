@@ -309,6 +309,24 @@ describe('TasksService', () => {
     expect(task.dueDate).toBe('2026-09-02T12:00:00.000Z');
   });
 
+  it('should create a task with tags', () => {
+    const task = service.create(
+      'Study MCP',
+      undefined,
+      'high',
+      undefined,
+      ['backend', 'urgent'],
+    );
+
+    expect(task.tags).toEqual(['backend', 'urgent']);
+  });
+
+  it('should create a task without tags', () => {
+    const task = service.create('Study MCP');
+
+    expect(task.tags).toBeUndefined();
+  });
+
   it('should update a task dueDate without overwriting other fields', () => {
     const task = service.update(1, {
       dueDate: '2026-12-31T23:59:59.000Z',
@@ -317,6 +335,50 @@ describe('TasksService', () => {
     expect(task.dueDate).toBe('2026-12-31T23:59:59.000Z');
     expect(task.title).toBe('Learn GH-600');
     expect(task.description).toBe('Study Agentic AI Systems');
+  });
+
+  it('should update task tags without overwriting other fields', () => {
+    const task = service.update(1, {
+      tags: ['backend', 'work'],
+    });
+
+    expect(task.tags).toEqual(['backend', 'work']);
+    expect(task.title).toBe('Learn GH-600');
+    expect(task.description).toBe('Study Agentic AI Systems');
+    expect(task.priority).toBe('medium');
+  });
+
+  it('should preserve existing tags when patch omits tags', () => {
+    service.update(1, { tags: ['backend', 'work'] });
+    const task = service.update(1, { title: 'Updated title' });
+
+    expect(task.tags).toEqual(['backend', 'work']);
+    expect(task.title).toBe('Updated title');
+  });
+
+  it('should clear tags when an empty array is supplied', () => {
+    service.update(1, { tags: ['backend', 'work'] });
+    const task = service.update(1, { tags: [] });
+
+    expect(task.tags).toEqual([]);
+  });
+
+  it('should filter tasks by a single tag', () => {
+    service.create('Review architecture', undefined, 'medium', undefined, [
+      'architecture',
+    ]);
+
+    expect(service.findAll(undefined, undefined, 'architecture')).toEqual([
+      {
+        id: 2,
+        title: 'Review architecture',
+        description: undefined,
+        completed: false,
+        priority: 'medium',
+        dueDate: undefined,
+        tags: ['architecture'],
+      },
+    ]);
   });
 
   it('should create a task with an explicit priority', () => {
