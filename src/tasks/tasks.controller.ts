@@ -95,12 +95,33 @@ export class TasksController {
     return validatedTags;
   }
 
+  private validateEstimateMinutesValue(
+    estimateMinutes: unknown,
+  ): number | undefined {
+    if (estimateMinutes === undefined) {
+      return undefined;
+    }
+
+    if (
+      typeof estimateMinutes !== 'number' ||
+      !Number.isInteger(estimateMinutes) ||
+      estimateMinutes <= 0
+    ) {
+      throw new BadRequestException(
+        'Task estimateMinutes must be a positive integer',
+      );
+    }
+
+    return estimateMinutes;
+  }
+
   private validateCreateTaskInput(body: {
     title?: unknown;
     description?: unknown;
     priority?: unknown;
     dueDate?: unknown;
     tags?: unknown;
+    estimateMinutes?: unknown;
   }): void {
     if (body.title === undefined) {
       throw new BadRequestException('Task title is required');
@@ -132,6 +153,10 @@ export class TasksController {
     if (body.tags !== undefined) {
       this.validateTagsValue(body.tags);
     }
+
+    if (body.estimateMinutes !== undefined) {
+      this.validateEstimateMinutesValue(body.estimateMinutes);
+    }
   }
 
   private validateUpdateTaskInput(body: {
@@ -141,6 +166,7 @@ export class TasksController {
     priority?: unknown;
     dueDate?: unknown;
     tags?: unknown;
+    estimateMinutes?: unknown;
   }): void {
     if (body.title !== undefined) {
       if (typeof body.title !== 'string') {
@@ -173,6 +199,10 @@ export class TasksController {
 
     if (body.tags !== undefined) {
       this.validateTagsValue(body.tags);
+    }
+
+    if (body.estimateMinutes !== undefined) {
+      this.validateEstimateMinutesValue(body.estimateMinutes);
     }
   }
 
@@ -281,6 +311,7 @@ export class TasksController {
       priority?: unknown;
       dueDate?: unknown;
       tags?: unknown;
+      estimateMinutes?: unknown;
     },
   ) {
     this.validateCreateTaskInput(body);
@@ -293,6 +324,7 @@ export class TasksController {
         : this.validatePriorityValue(body.priority),
       this.validateDueDateValue(body.dueDate),
       this.validateTagsValue(body.tags),
+      this.validateEstimateMinutesValue(body.estimateMinutes),
     );
   }
 
@@ -319,6 +351,7 @@ export class TasksController {
       priority?: unknown;
       dueDate?: unknown;
       tags?: unknown;
+      estimateMinutes?: unknown;
     },
   ) {
     this.validateUpdateTaskInput(body);
@@ -332,6 +365,7 @@ export class TasksController {
         priority?: TaskPriority;
         dueDate?: string;
         tags?: string[];
+        estimateMinutes?: number;
       },
     );
   }

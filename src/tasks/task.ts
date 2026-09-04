@@ -11,4 +11,5 @@ export interface Task {
   priority: TaskPriority;
   dueDate?: string;
   tags?: string[];
+  estimateMinutes?: number;
 }

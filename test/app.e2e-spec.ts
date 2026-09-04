@@ -111,7 +111,6 @@ describe('AppController (e2e)', () => {
         {
           id: 2,
           title: 'Write tests',
-          description: undefined,
           completed: true,
           priority: 'medium',
         },
@@ -190,7 +189,6 @@ describe('AppController (e2e)', () => {
       .expect({
         id: 2,
         title: 'Write tests',
-        description: undefined,
         completed: false,
         priority: 'medium',
       });
@@ -207,11 +205,48 @@ describe('AppController (e2e)', () => {
       .expect({
         id: 2,
         title: 'Write tests',
-        description: undefined,
         completed: false,
         priority: 'medium',
         dueDate: '2026-09-02T12:00:00.000Z',
       });
+  });
+
+  it('/tasks (POST) accepts estimateMinutes', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({
+        title: 'Write tests',
+        estimateMinutes: 90,
+      })
+      .expect(201)
+      .expect({
+        id: 2,
+        title: 'Write tests',
+        completed: false,
+        priority: 'medium',
+        estimateMinutes: 90,
+      });
+  });
+
+  it('/tasks (POST) rejects invalid estimateMinutes values', () => {
+    return Promise.all([
+      request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Write tests', estimateMinutes: 0 })
+        .expect(400),
+      request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Write tests', estimateMinutes: -30 })
+        .expect(400),
+      request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Write tests', estimateMinutes: 12.5 })
+        .expect(400),
+      request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Write tests', estimateMinutes: '90' })
+        .expect(400),
+    ]);
   });
 
   it('/tasks (POST) accepts tags', () => {
@@ -225,7 +260,6 @@ describe('AppController (e2e)', () => {
       .expect({
         id: 2,
         title: 'Write tests',
-        description: undefined,
         completed: false,
         priority: 'medium',
         tags: ['backend', 'urgent'],
@@ -240,7 +274,6 @@ describe('AppController (e2e)', () => {
       .expect({
         id: 2,
         title: 'Write tests',
-        description: undefined,
         completed: false,
         priority: 'medium',
       });
@@ -288,6 +321,62 @@ describe('AppController (e2e)', () => {
         priority: 'medium',
         tags: ['backend', 'urgent'],
       });
+  });
+
+  it('/tasks/:id (PATCH) accepts estimateMinutes updates', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ estimateMinutes: 90 })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+        estimateMinutes: 90,
+      });
+  });
+
+  it('/tasks/:id (PATCH) preserves existing estimateMinutes when omitted', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ estimateMinutes: 90 })
+      .expect(200);
+
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ title: 'Updated title' })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Updated title',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+        estimateMinutes: 90,
+      });
+  });
+
+  it('/tasks/:id (PATCH) rejects invalid estimateMinutes values', () => {
+    return Promise.all([
+      request(app.getHttpServer())
+        .patch('/tasks/1')
+        .send({ estimateMinutes: 0 })
+        .expect(400),
+      request(app.getHttpServer())
+        .patch('/tasks/1')
+        .send({ estimateMinutes: -30 })
+        .expect(400),
+      request(app.getHttpServer())
+        .patch('/tasks/1')
+        .send({ estimateMinutes: 12.5 })
+        .expect(400),
+      request(app.getHttpServer())
+        .patch('/tasks/1')
+        .send({ estimateMinutes: '90' })
+        .expect(400),
+    ]);
   });
 
   it('/tasks/:id (PATCH) preserves existing tags when omitted', async () => {
@@ -405,7 +494,6 @@ describe('AppController (e2e)', () => {
         {
           id: 2,
           title: 'Tagged task',
-          description: undefined,
           completed: false,
           priority: 'medium',
           tags: ['backend', 'urgent'],

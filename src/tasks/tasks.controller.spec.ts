@@ -143,6 +143,68 @@ describe('TasksController', () => {
     ).toThrow('Task description must be a string');
   });
 
+  it('should accept a valid estimateMinutes when creating a task', () => {
+    expect(
+      controller.create({
+        title: 'Study estimate',
+        estimateMinutes: 90,
+      }),
+    ).toEqual({
+      id: 2,
+      title: 'Study estimate',
+      description: undefined,
+      completed: false,
+      priority: 'medium',
+      estimateMinutes: 90,
+    });
+  });
+
+  it('should reject a zero estimateMinutes when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study estimate',
+        estimateMinutes: 0,
+      }),
+    ).toThrow('Task estimateMinutes must be a positive integer');
+  });
+
+  it('should reject a negative estimateMinutes when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study estimate',
+        estimateMinutes: -30,
+      }),
+    ).toThrow('Task estimateMinutes must be a positive integer');
+  });
+
+  it('should reject a decimal estimateMinutes when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study estimate',
+        estimateMinutes: 45.5,
+      }),
+    ).toThrow('Task estimateMinutes must be a positive integer');
+  });
+
+  it('should reject an invalid type for estimateMinutes when creating a task', () => {
+    expect(() =>
+      controller.create({
+        title: 'Study estimate',
+        estimateMinutes: '90' as any,
+      }),
+    ).toThrow('Task estimateMinutes must be a positive integer');
+  });
+
+  it('should preserve existing behavior when estimateMinutes is omitted on create', () => {
+    expect(controller.create({ title: 'Study estimate' })).toEqual({
+      id: 2,
+      title: 'Study estimate',
+      description: undefined,
+      completed: false,
+      priority: 'medium',
+    });
+  });
+
   it('should reject creating a task with an invalid priority', () => {
     expect(() =>
       controller.create({ title: 'Study', priority: 'urgent' as any }),
@@ -233,6 +295,58 @@ describe('TasksController', () => {
         dueDate: '',
       }),
     ).toThrow('Task dueDate must be a valid ISO date or datetime');
+  });
+
+  it('should accept a valid estimateMinutes when updating a task', () => {
+    expect(
+      controller.update('1', {
+        estimateMinutes: 90,
+      }),
+    ).toEqual({
+      id: 1,
+      title: 'Learn GH-600',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+      priority: 'medium',
+      estimateMinutes: 90,
+    });
+  });
+
+  it('should preserve existing estimateMinutes when patch omits estimateMinutes', () => {
+    controller.update('1', { estimateMinutes: 90 });
+
+    expect(controller.update('1', { title: 'Updated task title' })).toEqual({
+      id: 1,
+      title: 'Updated task title',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+      priority: 'medium',
+      estimateMinutes: 90,
+    });
+  });
+
+  it('should reject a zero estimateMinutes when updating a task', () => {
+    expect(() => controller.update('1', { estimateMinutes: 0 })).toThrow(
+      'Task estimateMinutes must be a positive integer',
+    );
+  });
+
+  it('should reject a negative estimateMinutes when updating a task', () => {
+    expect(() => controller.update('1', { estimateMinutes: -30 })).toThrow(
+      'Task estimateMinutes must be a positive integer',
+    );
+  });
+
+  it('should reject a decimal estimateMinutes when updating a task', () => {
+    expect(() => controller.update('1', { estimateMinutes: 30.5 })).toThrow(
+      'Task estimateMinutes must be a positive integer',
+    );
+  });
+
+  it('should reject an invalid type for estimateMinutes when updating a task', () => {
+    expect(() =>
+      controller.update('1', { estimateMinutes: '90' as any }),
+    ).toThrow('Task estimateMinutes must be a positive integer');
   });
 
   it('should reject updating a task with a non-string title', () => {

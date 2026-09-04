@@ -310,15 +310,57 @@ describe('TasksService', () => {
   });
 
   it('should create a task with tags', () => {
+    const task = service.create('Study MCP', undefined, 'high', undefined, [
+      'backend',
+      'urgent',
+    ]);
+
+    expect(task.tags).toEqual(['backend', 'urgent']);
+  });
+
+  it('should create a task with an estimate', () => {
     const task = service.create(
       'Study MCP',
       undefined,
       'high',
       undefined,
-      ['backend', 'urgent'],
+      undefined,
+      90,
     );
 
-    expect(task.tags).toEqual(['backend', 'urgent']);
+    expect(task.estimateMinutes).toBe(90);
+  });
+
+  it('should create a task without an estimate', () => {
+    const task = service.create('Study MCP');
+
+    expect(task.estimateMinutes).toBeUndefined();
+  });
+
+  it('should reject invalid estimate values when creating a task', () => {
+    expect(() =>
+      service.create('Study MCP', undefined, 'medium', undefined, undefined, 0),
+    ).toThrow('Task estimateMinutes must be a positive integer');
+    expect(() =>
+      service.create(
+        'Study MCP',
+        undefined,
+        'medium',
+        undefined,
+        undefined,
+        -5,
+      ),
+    ).toThrow('Task estimateMinutes must be a positive integer');
+    expect(() =>
+      service.create(
+        'Study MCP',
+        undefined,
+        'medium',
+        undefined,
+        undefined,
+        1.5 as any,
+      ),
+    ).toThrow('Task estimateMinutes must be a positive integer');
   });
 
   it('should create a task without tags', () => {
@@ -346,6 +388,37 @@ describe('TasksService', () => {
     expect(task.title).toBe('Learn GH-600');
     expect(task.description).toBe('Study Agentic AI Systems');
     expect(task.priority).toBe('medium');
+  });
+
+  it('should update a task estimate without overwriting other fields', () => {
+    const task = service.update(1, {
+      estimateMinutes: 90,
+    });
+
+    expect(task.estimateMinutes).toBe(90);
+    expect(task.title).toBe('Learn GH-600');
+    expect(task.description).toBe('Study Agentic AI Systems');
+    expect(task.priority).toBe('medium');
+  });
+
+  it('should preserve the existing estimate when patch omits estimateMinutes', () => {
+    service.update(1, { estimateMinutes: 90 });
+    const task = service.update(1, { title: 'Updated title' });
+
+    expect(task.estimateMinutes).toBe(90);
+    expect(task.title).toBe('Updated title');
+  });
+
+  it('should reject invalid estimate values when updating a task', () => {
+    expect(() => service.update(1, { estimateMinutes: 0 })).toThrow(
+      'Task estimateMinutes must be a positive integer',
+    );
+    expect(() => service.update(1, { estimateMinutes: -7 })).toThrow(
+      'Task estimateMinutes must be a positive integer',
+    );
+    expect(() => service.update(1, { estimateMinutes: 1.5 as any })).toThrow(
+      'Task estimateMinutes must be a positive integer',
+    );
   });
 
   it('should preserve existing tags when patch omits tags', () => {
