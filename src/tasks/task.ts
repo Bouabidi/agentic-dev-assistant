@@ -1,7 +1,16 @@
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskCategory =
+  'work' | 'personal' | 'learning' | 'development' | 'other';
 
 export const TASK_PRIORITIES: TaskPriority[] = ['low', 'medium', 'high'];
 export const DEFAULT_TASK_PRIORITY: TaskPriority = 'medium';
+export const TASK_CATEGORIES: TaskCategory[] = [
+  'work',
+  'personal',
+  'learning',
+  'development',
+  'other',
+];
 
 export interface Task {
   id: number;
@@ -11,4 +20,5 @@ export interface Task {
   priority: TaskPriority;
   dueDate?: string;
   tags?: string[];
+  category?: TaskCategory;
 }

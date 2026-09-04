@@ -149,6 +149,60 @@ describe('TasksController', () => {
     ).toThrow('Task priority must be one of: low, medium, high');
   });
 
+  it('should accept a valid category when creating a task', () => {
+    expect(controller.create({ title: 'Study', category: 'learning' })).toEqual(
+      {
+        id: 2,
+        title: 'Study',
+        description: undefined,
+        completed: false,
+        priority: 'medium',
+        category: 'learning',
+      },
+    );
+  });
+
+  it('should allow creating a task without a category', () => {
+    expect(controller.create({ title: 'Study' }).category).toBeUndefined();
+  });
+
+  it.each(['school', '', '   ', null, 42, [], {}])(
+    'should reject invalid category %p when creating a task',
+    (category) => {
+      expect(() =>
+        controller.create({ title: 'Study', category: category as any }),
+      ).toThrow(
+        'Task category must be one of: work, personal, learning, development, other',
+      );
+    },
+  );
+
+  it('should accept a valid category when updating a task', () => {
+    expect(controller.update('1', { category: 'work' }).category).toBe('work');
+  });
+
+  it('should preserve a category when a patch omits it', () => {
+    controller.update('1', { category: 'personal' });
+
+    expect(controller.update('1', { title: 'Updated task' }).category).toBe(
+      'personal',
+    );
+  });
+
+  it('should replace a category when a patch supplies a valid value', () => {
+    controller.update('1', { category: 'personal' });
+
+    expect(controller.update('1', { category: 'development' }).category).toBe(
+      'development',
+    );
+  });
+
+  it('should reject an invalid category when updating a task', () => {
+    expect(() => controller.update('1', { category: null as any })).toThrow(
+      'Task category must be one of: work, personal, learning, development, other',
+    );
+  });
+
   it('should accept valid tags when creating a task', () => {
     expect(
       controller.create({

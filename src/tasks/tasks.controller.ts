@@ -9,7 +9,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { DEFAULT_TASK_PRIORITY, TASK_PRIORITIES, TaskPriority } from './task';
+import {
+  DEFAULT_TASK_PRIORITY,
+  TASK_CATEGORIES,
+  TASK_PRIORITIES,
+  TaskCategory,
+  TaskPriority,
+} from './task';
 import { TasksService } from './tasks.service';
 
 @Controller('tasks')
@@ -95,12 +101,30 @@ export class TasksController {
     return validatedTags;
   }
 
+  private validateCategoryValue(category: unknown): TaskCategory | undefined {
+    if (category === undefined) {
+      return undefined;
+    }
+
+    if (
+      typeof category !== 'string' ||
+      !TASK_CATEGORIES.includes(category as TaskCategory)
+    ) {
+      throw new BadRequestException(
+        'Task category must be one of: work, personal, learning, development, other',
+      );
+    }
+
+    return category as TaskCategory;
+  }
+
   private validateCreateTaskInput(body: {
     title?: unknown;
     description?: unknown;
     priority?: unknown;
     dueDate?: unknown;
     tags?: unknown;
+    category?: unknown;
   }): void {
     if (body.title === undefined) {
       throw new BadRequestException('Task title is required');
@@ -132,6 +156,10 @@ export class TasksController {
     if (body.tags !== undefined) {
       this.validateTagsValue(body.tags);
     }
+
+    if (body.category !== undefined) {
+      this.validateCategoryValue(body.category);
+    }
   }
 
   private validateUpdateTaskInput(body: {
@@ -141,6 +169,7 @@ export class TasksController {
     priority?: unknown;
     dueDate?: unknown;
     tags?: unknown;
+    category?: unknown;
   }): void {
     if (body.title !== undefined) {
       if (typeof body.title !== 'string') {
@@ -173,6 +202,10 @@ export class TasksController {
 
     if (body.tags !== undefined) {
       this.validateTagsValue(body.tags);
+    }
+
+    if (body.category !== undefined) {
+      this.validateCategoryValue(body.category);
     }
   }
 
@@ -281,6 +314,7 @@ export class TasksController {
       priority?: unknown;
       dueDate?: unknown;
       tags?: unknown;
+      category?: unknown;
     },
   ) {
     this.validateCreateTaskInput(body);
@@ -293,6 +327,7 @@ export class TasksController {
         : this.validatePriorityValue(body.priority),
       this.validateDueDateValue(body.dueDate),
       this.validateTagsValue(body.tags),
+      this.validateCategoryValue(body.category),
     );
   }
 
@@ -319,6 +354,7 @@ export class TasksController {
       priority?: unknown;
       dueDate?: unknown;
       tags?: unknown;
+      category?: unknown;
     },
   ) {
     this.validateUpdateTaskInput(body);
@@ -332,6 +368,7 @@ export class TasksController {
         priority?: TaskPriority;
         dueDate?: string;
         tags?: string[];
+        category?: TaskCategory;
       },
     );
   }
