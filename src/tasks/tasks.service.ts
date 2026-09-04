@@ -1,5 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DEFAULT_TASK_PRIORITY, Task, TaskPriority } from './task';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  DEFAULT_TASK_PRIORITY,
+  TASK_CATEGORIES,
+  Task,
+  TaskCategory,
+  TaskPriority,
+} from './task';
 
 @Injectable()
 export class TasksService {
@@ -21,11 +31,22 @@ export class TasksService {
     return task as Task;
   }
 
-  findAll(
-    completed?: boolean,
-    priority?: TaskPriority,
-    tag?: string,
-  ): Task[] {
+  private validateCategoryValue(
+    category: TaskCategory | undefined,
+  ): TaskCategory | undefined {
+    if (
+      category !== undefined &&
+      !TASK_CATEGORIES.includes(category as TaskCategory)
+    ) {
+      throw new BadRequestException(
+        'Task category must be one of: work, personal, learning, development, other',
+      );
+    }
+
+    return category;
+  }
+
+  findAll(completed?: boolean, priority?: TaskPriority, tag?: string): Task[] {
     return this.tasks.filter((task) => {
       const ensuredTask = this.ensureTaskPriority(task);
       const matchesCompleted =
@@ -99,7 +120,10 @@ export class TasksService {
     priority: TaskPriority = DEFAULT_TASK_PRIORITY,
     dueDate?: string,
     tags?: string[],
+    category?: TaskCategory,
   ): Task {
+    this.validateCategoryValue(category);
+
     const task: Task = {
       id: this.tasks.length + 1,
       title,
@@ -108,6 +132,7 @@ export class TasksService {
       priority,
       dueDate,
       tags,
+      category,
     };
 
     this.tasks.push(task);
@@ -117,6 +142,8 @@ export class TasksService {
 
   update(id: number, updates: Partial<Task>): Task {
     const task = this.findOne(id);
+
+    this.validateCategoryValue(updates.category);
 
     Object.assign(task, updates);
     const storedTask = this.tasks.find((entry) => entry.id === id);

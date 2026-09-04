@@ -298,6 +298,79 @@ describe('TasksService', () => {
     expect(task.priority).toBe('medium');
   });
 
+  it.each(['work', 'personal', 'learning', 'development', 'other'] as const)(
+    'should create a task with valid category %s',
+    (category) => {
+      const task = service.create(
+        'Study MCP',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        category,
+      );
+
+      expect(task.category).toBe(category);
+    },
+  );
+
+  it('should create a task without a category', () => {
+    const task = service.create('Study MCP');
+
+    expect(task.category).toBeUndefined();
+  });
+
+  it('should reject invalid categories when creating a task', () => {
+    for (const category of ['school', 'urgent', '', '   ', null]) {
+      expect(() =>
+        service.create(
+          'Study MCP',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          category as any,
+        ),
+      ).toThrow(
+        'Task category must be one of: work, personal, learning, development, other',
+      );
+    }
+  });
+
+  it('should update a task category', () => {
+    const task = service.update(1, { category: 'work' });
+
+    expect(task.category).toBe('work');
+  });
+
+  it('should preserve the existing category when a patch omits it', () => {
+    service.update(1, { category: 'personal' });
+
+    expect(service.update(1, { title: 'Updated title' }).category).toBe(
+      'personal',
+    );
+  });
+
+  it('should replace the existing category with a valid value', () => {
+    service.update(1, { category: 'personal' });
+
+    expect(service.update(1, { category: 'development' }).category).toBe(
+      'development',
+    );
+  });
+
+  it('should reject invalid categories when updating a task', () => {
+    expect(() => service.update(1, { category: 'urgent' as any })).toThrow(
+      'Task category must be one of: work, personal, learning, development, other',
+    );
+  });
+
+  it('should keep legacy tasks without a category valid', () => {
+    const task = service.findOne(1);
+
+    expect(task.category).toBeUndefined();
+  });
+
   it('should create a task with a dueDate', () => {
     const task = service.create(
       'Study MCP',
@@ -310,13 +383,10 @@ describe('TasksService', () => {
   });
 
   it('should create a task with tags', () => {
-    const task = service.create(
-      'Study MCP',
-      undefined,
-      'high',
-      undefined,
-      ['backend', 'urgent'],
-    );
+    const task = service.create('Study MCP', undefined, 'high', undefined, [
+      'backend',
+      'urgent',
+    ]);
 
     expect(task.tags).toEqual(['backend', 'urgent']);
   });

@@ -196,6 +196,50 @@ describe('AppController (e2e)', () => {
       });
   });
 
+  it.each(['work', 'personal', 'learning', 'development', 'other'])(
+    '/tasks (POST) accepts category %s and GET returns it',
+    async (category) => {
+      const response = await request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Study category', category })
+        .expect(201);
+
+      return request(app.getHttpServer())
+        .get(`/tasks/${response.body.id}`)
+        .expect(200)
+        .expect({
+          id: 2,
+          title: 'Study category',
+          completed: false,
+          priority: 'medium',
+          category,
+        });
+    },
+  );
+
+  it('/tasks (POST) accepts a task without a category', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'No category' })
+      .expect(201)
+      .expect({
+        id: 2,
+        title: 'No category',
+        completed: false,
+        priority: 'medium',
+      });
+  });
+
+  it.each(['school', '', '   ', null, 42, [], {}])(
+    '/tasks (POST) rejects invalid category %p',
+    (category) => {
+      return request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Invalid category', category })
+        .expect(400);
+    },
+  );
+
   it('/tasks (POST) accepts a valid dueDate', () => {
     return request(app.getHttpServer())
       .post('/tasks')
@@ -288,6 +332,48 @@ describe('AppController (e2e)', () => {
         priority: 'medium',
         tags: ['backend', 'urgent'],
       });
+  });
+
+  it('/tasks/:id (PATCH) replaces a category', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ category: 'work' })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+        category: 'work',
+      });
+  });
+
+  it('/tasks/:id (PATCH) preserves a category when omitted', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ category: 'personal' })
+      .expect(200);
+
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ title: 'Updated category task' })
+      .expect(200)
+      .expect({
+        id: 1,
+        title: 'Updated category task',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+        category: 'personal',
+      });
+  });
+
+  it('/tasks/:id (PATCH) rejects an invalid category', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ category: null })
+      .expect(400);
   });
 
   it('/tasks/:id (PATCH) preserves existing tags when omitted', async () => {
