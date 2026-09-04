@@ -117,6 +117,57 @@ describe('TasksService', () => {
     expect(service.findAll(true)).toHaveLength(2);
   });
 
+  it.each(['todo', 'in_progress'] as const)(
+    'should transition a status-bearing %s task to done during bulk completion',
+    (status) => {
+      service.create(
+        'Status task',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        status,
+      );
+
+      const [updated] = service.completeMany([2]);
+
+      expect(updated).toMatchObject({
+        status: 'done',
+        completed: true,
+      });
+      expect(service.findOne(2)).toMatchObject({
+        status: 'done',
+        completed: true,
+      });
+    },
+  );
+
+  it('should keep a status-bearing done task completed during bulk completion', () => {
+    service.create(
+      'Done task',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'done',
+    );
+
+    const [updated] = service.completeMany([2]);
+
+    expect(updated).toMatchObject({ status: 'done', completed: true });
+  });
+
+  it('should preserve legacy bulk completion behavior for tasks without status', () => {
+    service.create('Legacy task');
+
+    const [updated] = service.completeMany([2]);
+
+    expect(updated).toMatchObject({ completed: true });
+    expect(updated.status).toBeUndefined();
+  });
+
   it('should throw when a bulk completion request includes a missing task ID', () => {
     service.create('Study MCP');
 
@@ -369,6 +420,111 @@ describe('TasksService', () => {
     const task = service.findOne(1);
 
     expect(task.category).toBeUndefined();
+  });
+
+  it.each(['todo', 'in_progress', 'done'] as const)(
+    'should create a task with status %s and matching completed value',
+    (status) => {
+      const task = service.create(
+        'Study status',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        status,
+      );
+
+      expect(task.status).toBe(status);
+      expect(task.completed).toBe(status === 'done');
+    },
+  );
+
+  it('should create a task without status using the existing completed default', () => {
+    expect(service.create('Study status').completed).toBe(false);
+  });
+
+  it('should accept matching status and completed values on create', () => {
+    const task = service.create(
+      'Study status',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'done',
+      true,
+    );
+
+    expect(task).toMatchObject({ status: 'done', completed: true });
+  });
+
+  it.each(['school', '', '   ', null, 42, [], {}])(
+    'should reject invalid status %p on create',
+    (status) => {
+      expect(() =>
+        service.create(
+          'Study status',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          status as any,
+        ),
+      ).toThrow('Task status must be one of: todo, in_progress, done');
+    },
+  );
+
+  it.each([
+    ['done', false],
+    ['todo', true],
+    ['in_progress', true],
+  ])('should reject inconsistent status and completed values on create', (status, completed) => {
+    expect(() =>
+      service.create(
+        'Study status',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        status as any,
+        completed as any,
+      ),
+    ).toThrow('Task status and completed values must be consistent');
+  });
+
+  it('should replace status and derive completed on update', () => {
+    const task = service.update(1, { status: 'done' });
+
+    expect(task).toMatchObject({
+      id: 1,
+      title: 'Learn GH-600',
+      description: 'Study Agentic AI Systems',
+      priority: 'medium',
+      status: 'done',
+      completed: true,
+    });
+  });
+
+  it('should preserve status and completed when update omits status', () => {
+    service.update(1, { status: 'in_progress' });
+
+    expect(service.update(1, { title: 'Updated status' })).toMatchObject({
+      title: 'Updated status',
+      status: 'in_progress',
+      completed: false,
+    });
+  });
+
+  it('should reject a completed-only update that conflicts with status', () => {
+    service.update(1, { status: 'todo' });
+
+    expect(() => service.update(1, { completed: true })).toThrow(
+      'Task status and completed values must be consistent',
+    );
+    expect(service.findOne(1)).toMatchObject({ status: 'todo', completed: false });
   });
 
   it('should create a task with a dueDate', () => {

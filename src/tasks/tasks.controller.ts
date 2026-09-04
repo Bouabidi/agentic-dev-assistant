@@ -13,8 +13,10 @@ import {
   DEFAULT_TASK_PRIORITY,
   TASK_CATEGORIES,
   TASK_PRIORITIES,
+  TASK_STATUSES,
   TaskCategory,
   TaskPriority,
+  TaskStatus,
 } from './task';
 import { TasksService } from './tasks.service';
 
@@ -118,6 +120,37 @@ export class TasksController {
     return category as TaskCategory;
   }
 
+  private validateStatusValue(status: unknown): TaskStatus | undefined {
+    if (status === undefined) {
+      return undefined;
+    }
+
+    if (typeof status !== 'string' || !TASK_STATUSES.includes(status as TaskStatus)) {
+      throw new BadRequestException(
+        'Task status must be one of: todo, in_progress, done',
+      );
+    }
+
+    return status as TaskStatus;
+  }
+
+  private validateStatusCompletedConsistency(
+    status: unknown,
+    completed: unknown,
+  ): void {
+    if (status === undefined || completed === undefined) {
+      return;
+    }
+
+    const expectedCompleted = status === 'done';
+
+    if (completed !== expectedCompleted) {
+      throw new BadRequestException(
+        'Task status and completed values must be consistent',
+      );
+    }
+  }
+
   private validateCreateTaskInput(body: {
     title?: unknown;
     description?: unknown;
@@ -125,6 +158,8 @@ export class TasksController {
     dueDate?: unknown;
     tags?: unknown;
     category?: unknown;
+    status?: unknown;
+    completed?: unknown;
   }): void {
     if (body.title === undefined) {
       throw new BadRequestException('Task title is required');
@@ -160,6 +195,15 @@ export class TasksController {
     if (body.category !== undefined) {
       this.validateCategoryValue(body.category);
     }
+
+    if (body.completed !== undefined && typeof body.completed !== 'boolean') {
+      throw new BadRequestException('Task completed must be a boolean');
+    }
+
+    if (body.status !== undefined) {
+      this.validateStatusValue(body.status);
+      this.validateStatusCompletedConsistency(body.status, body.completed);
+    }
   }
 
   private validateUpdateTaskInput(body: {
@@ -170,6 +214,7 @@ export class TasksController {
     dueDate?: unknown;
     tags?: unknown;
     category?: unknown;
+    status?: unknown;
   }): void {
     if (body.title !== undefined) {
       if (typeof body.title !== 'string') {
@@ -206,6 +251,11 @@ export class TasksController {
 
     if (body.category !== undefined) {
       this.validateCategoryValue(body.category);
+    }
+
+    if (body.status !== undefined) {
+      this.validateStatusValue(body.status);
+      this.validateStatusCompletedConsistency(body.status, body.completed);
     }
   }
 
@@ -315,6 +365,8 @@ export class TasksController {
       dueDate?: unknown;
       tags?: unknown;
       category?: unknown;
+      status?: unknown;
+      completed?: unknown;
     },
   ) {
     this.validateCreateTaskInput(body);
@@ -328,6 +380,8 @@ export class TasksController {
       this.validateDueDateValue(body.dueDate),
       this.validateTagsValue(body.tags),
       this.validateCategoryValue(body.category),
+      this.validateStatusValue(body.status),
+      body.completed as boolean | undefined,
     );
   }
 
@@ -355,6 +409,7 @@ export class TasksController {
       dueDate?: unknown;
       tags?: unknown;
       category?: unknown;
+      status?: unknown;
     },
   ) {
     this.validateUpdateTaskInput(body);
@@ -369,6 +424,7 @@ export class TasksController {
         dueDate?: string;
         tags?: string[];
         category?: TaskCategory;
+        status?: TaskStatus;
       },
     );
   }

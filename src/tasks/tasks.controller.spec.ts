@@ -203,6 +203,77 @@ describe('TasksController', () => {
     );
   });
 
+  it.each(['todo', 'in_progress', 'done'] as const)(
+    'should accept status %s when creating a task',
+    (status) => {
+      expect(controller.create({ title: 'Study', status })).toMatchObject({
+        status,
+        completed: status === 'done',
+      });
+    },
+  );
+
+  it('should accept valid explicit status and completed values', () => {
+    expect(
+      controller.create({
+        title: 'Study',
+        status: 'done',
+        completed: true,
+      }),
+    ).toMatchObject({ status: 'done', completed: true });
+  });
+
+  it.each(['school', '', '   ', null, 42, [], {}])(
+    'should reject invalid status %p when creating a task',
+    (status) => {
+      expect(() =>
+        controller.create({ title: 'Study', status: status as any }),
+      ).toThrow('Task status must be one of: todo, in_progress, done');
+    },
+  );
+
+  it.each([
+    ['done', false],
+    ['todo', true],
+    ['in_progress', true],
+  ])('should reject inconsistent status and completed values', (status, completed) => {
+    expect(() =>
+      controller.create({ title: 'Study', status, completed } as any),
+    ).toThrow('Task status and completed values must be consistent');
+  });
+
+  it('should derive completed when patching status', () => {
+    expect(controller.update('1', { status: 'done' })).toMatchObject({
+      status: 'done',
+      completed: true,
+    });
+  });
+
+  it('should accept status through the PATCH request body contract', () => {
+    expect(controller.update('1', { status: 'in_progress' })).toMatchObject({
+      status: 'in_progress',
+      completed: false,
+    });
+  });
+
+  it('should preserve status and completed when patch omits status', () => {
+    controller.update('1', { status: 'in_progress' });
+
+    expect(controller.update('1', { title: 'Updated task' })).toMatchObject({
+      title: 'Updated task',
+      status: 'in_progress',
+      completed: false,
+    });
+  });
+
+  it('should reject a completed-only patch that conflicts with status', () => {
+    controller.update('1', { status: 'todo' });
+
+    expect(() => controller.update('1', { completed: true })).toThrow(
+      'Task status and completed values must be consistent',
+    );
+  });
+
   it('should accept valid tags when creating a task', () => {
     expect(
       controller.create({

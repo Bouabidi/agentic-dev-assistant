@@ -6,9 +6,11 @@ import {
 import {
   DEFAULT_TASK_PRIORITY,
   TASK_CATEGORIES,
+  TASK_STATUSES,
   Task,
   TaskCategory,
   TaskPriority,
+  TaskStatus,
 } from './task';
 
 @Injectable()
@@ -44,6 +46,39 @@ export class TasksService {
     }
 
     return category;
+  }
+
+  private getCompletedForStatus(status: TaskStatus): boolean {
+    return status === 'done';
+  }
+
+  private validateStatusValue(status: unknown): TaskStatus | undefined {
+    if (status === undefined) {
+      return undefined;
+    }
+
+    if (typeof status !== 'string' || !TASK_STATUSES.includes(status as TaskStatus)) {
+      throw new BadRequestException(
+        'Task status must be one of: todo, in_progress, done',
+      );
+    }
+
+    return status as TaskStatus;
+  }
+
+  private validateStatusCompletedConsistency(
+    status: TaskStatus | undefined,
+    completed: boolean | undefined,
+  ): void {
+    if (status === undefined || completed === undefined) {
+      return;
+    }
+
+    if (this.getCompletedForStatus(status) !== completed) {
+      throw new BadRequestException(
+        'Task status and completed values must be consistent',
+      );
+    }
   }
 
   findAll(completed?: boolean, priority?: TaskPriority, tag?: string): Task[] {
@@ -121,18 +156,27 @@ export class TasksService {
     dueDate?: string,
     tags?: string[],
     category?: TaskCategory,
+    status?: TaskStatus,
+    completed?: boolean,
   ): Task {
     this.validateCategoryValue(category);
+    const validatedStatus = this.validateStatusValue(status);
+    this.validateStatusCompletedConsistency(validatedStatus, completed);
+    const resolvedCompleted =
+      validatedStatus === undefined
+        ? completed ?? false
+        : this.getCompletedForStatus(validatedStatus);
 
     const task: Task = {
       id: this.tasks.length + 1,
       title,
       description,
-      completed: false,
+      completed: resolvedCompleted,
       priority,
       dueDate,
       tags,
       category,
+      status: validatedStatus,
     };
 
     this.tasks.push(task);
@@ -144,12 +188,31 @@ export class TasksService {
     const task = this.findOne(id);
 
     this.validateCategoryValue(updates.category);
+    const validatedStatus = this.validateStatusValue(updates.status);
 
-    Object.assign(task, updates);
+    if (
+      updates.completed !== undefined &&
+      typeof updates.completed !== 'boolean'
+    ) {
+      throw new BadRequestException('Task completed must be a boolean');
+    }
+
+    this.validateStatusCompletedConsistency(
+      validatedStatus ?? task.status,
+      updates.completed,
+    );
+
+    const validatedUpdates = { ...updates };
+
+    if (validatedStatus !== undefined && updates.completed === undefined) {
+      validatedUpdates.completed = this.getCompletedForStatus(validatedStatus);
+    }
+
+    Object.assign(task, validatedUpdates);
     const storedTask = this.tasks.find((entry) => entry.id === id);
 
     if (storedTask) {
-      Object.assign(storedTask, updates);
+      Object.assign(storedTask, validatedUpdates);
       if (storedTask.priority === undefined) {
         storedTask.priority = DEFAULT_TASK_PRIORITY;
       }
@@ -170,8 +233,14 @@ export class TasksService {
       const storedTask = this.tasks.find((entry) => entry.id === task.id);
       if (storedTask) {
         storedTask.completed = true;
+        if (storedTask.status !== undefined) {
+          storedTask.status = 'done';
+        }
       }
       task.completed = true;
+      if (task.status !== undefined) {
+        task.status = 'done';
+      }
     });
 
     return tasksToUpdate.map((task) => this.ensureTaskPriority(task));
