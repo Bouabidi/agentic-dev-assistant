@@ -217,6 +217,59 @@ describe('AppController (e2e)', () => {
     },
   );
 
+  it.each([
+    ['todo', false],
+    ['in_progress', false],
+    ['done', true],
+  ])('/tasks (POST) derives completed for status %s', (status, completed) => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Status task', status })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.status).toBe(status);
+        expect(response.body.completed).toBe(completed);
+      });
+  });
+
+  it.each([
+    ['todo', false],
+    ['in_progress', false],
+    ['done', true],
+  ])(
+    '/tasks (POST) accepts matching status/completed %s',
+    (status, completed) => {
+      return request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Status task', status, completed })
+        .expect(201);
+    },
+  );
+
+  it.each([
+    ['done', false],
+    ['todo', true],
+    ['in_progress', true],
+  ])(
+    '/tasks (POST) rejects mismatched status/completed %s',
+    (status, completed) => {
+      return request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Status task', status, completed })
+        .expect(400);
+    },
+  );
+
+  it.each(['school', '', '   ', null, 42, [], {}])(
+    '/tasks (POST) rejects invalid status %p',
+    (status) => {
+      return request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: 'Status task', status })
+        .expect(400);
+    },
+  );
+
   it('/tasks (POST) accepts a task without a category', () => {
     return request(app.getHttpServer())
       .post('/tasks')
@@ -373,6 +426,75 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .patch('/tasks/1')
       .send({ category: null })
+      .expect(400);
+  });
+
+  it('/tasks/:id (PATCH) derives completed when replacing status', () => {
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ status: 'done' })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.status).toBe('done');
+        expect(response.body.completed).toBe(true);
+      });
+  });
+
+  it('/tasks/:id (GET) returns status when present', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ status: 'in_progress' })
+      .expect(200);
+
+    return request(app.getHttpServer()).get('/tasks/1').expect(200).expect({
+      id: 1,
+      title: 'Learn GH-600',
+      description: 'Study Agentic AI Systems',
+      completed: false,
+      priority: 'medium',
+      status: 'in_progress',
+    });
+  });
+
+  it.each([
+    ['done', false],
+    ['todo', true],
+    ['in_progress', true],
+  ])(
+    '/tasks/:id (PATCH) rejects mismatched status/completed %s',
+    (status, completed) => {
+      return request(app.getHttpServer())
+        .patch('/tasks/1')
+        .send({ status, completed })
+        .expect(400);
+    },
+  );
+
+  it('/tasks/:id (PATCH) preserves status and completed when status is omitted', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ status: 'in_progress' })
+      .expect(200);
+
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ title: 'Updated status task' })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.status).toBe('in_progress');
+        expect(response.body.completed).toBe(false);
+      });
+  });
+
+  it('/tasks/:id (PATCH) rejects a completed-only update conflicting with status', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ status: 'todo' })
+      .expect(200);
+
+    return request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ completed: true })
       .expect(400);
   });
 
