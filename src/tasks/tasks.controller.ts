@@ -297,6 +297,11 @@ export class TasksController {
     return this.tasksService.summary();
   }
 
+  @Get('report')
+  report() {
+    return this.tasksService.report();
+  }
+
   @Get('search')
   search(@Query('q') q?: string) {
     if (q === undefined) {

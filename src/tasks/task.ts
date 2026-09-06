@@ -33,3 +33,12 @@ export interface TaskFilters {
   category?: TaskCategory;
   tag?: string;
 }
+
+export interface TaskReport {
+  total: number;
+  completed: number;
+  incomplete: number;
+  statusCounts: Record<TaskStatus, number> & { withoutStatus: number };
+  priorityCounts: Record<TaskPriority, number>;
+  categoryCounts: Record<TaskCategory, number> & { uncategorized: number };
+}

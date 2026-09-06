@@ -91,6 +91,33 @@ describe('TasksController', () => {
     });
   });
 
+  it('should return the task report', () => {
+    expect(controller.report()).toEqual({
+      total: 1,
+      completed: 0,
+      incomplete: 1,
+      statusCounts: {
+        todo: 0,
+        in_progress: 0,
+        done: 0,
+        withoutStatus: 1,
+      },
+      priorityCounts: {
+        low: 0,
+        medium: 1,
+        high: 0,
+      },
+      categoryCounts: {
+        work: 0,
+        personal: 0,
+        learning: 0,
+        development: 0,
+        other: 0,
+        uncategorized: 1,
+      },
+    });
+  });
+
   it('should delegate a valid bulk completion request', () => {
     expect(controller.completeMany({ taskIds: [1] })).toEqual([
       {

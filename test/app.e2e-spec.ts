@@ -42,6 +42,135 @@ describe('AppController (e2e)', () => {
       });
   });
 
+  it('/tasks/report (GET) returns the legacy task report', () => {
+    return request(app.getHttpServer())
+      .get('/tasks/report')
+      .expect(200)
+      .expect({
+        total: 1,
+        completed: 0,
+        incomplete: 1,
+        statusCounts: {
+          todo: 0,
+          in_progress: 0,
+          done: 0,
+          withoutStatus: 1,
+        },
+        priorityCounts: {
+          low: 0,
+          medium: 1,
+          high: 0,
+        },
+        categoryCounts: {
+          work: 0,
+          personal: 0,
+          learning: 0,
+          development: 0,
+          other: 0,
+          uncategorized: 1,
+        },
+      });
+  });
+
+  it('/tasks/report (GET) aggregates mixed task data without changing tasks', async () => {
+    const before = await request(app.getHttpServer())
+      .get('/tasks/1')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({
+        title: 'Todo work',
+        priority: 'low',
+        category: 'work',
+        status: 'todo',
+      })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({
+        title: 'In progress personal',
+        priority: 'high',
+        category: 'personal',
+        status: 'in_progress',
+      })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({
+        title: 'Done learning',
+        priority: 'medium',
+        category: 'learning',
+        status: 'done',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get('/tasks/report')
+      .expect(200)
+      .expect({
+        total: 4,
+        completed: 1,
+        incomplete: 3,
+        statusCounts: {
+          todo: 1,
+          in_progress: 1,
+          done: 1,
+          withoutStatus: 1,
+        },
+        priorityCounts: {
+          low: 1,
+          medium: 2,
+          high: 1,
+        },
+        categoryCounts: {
+          work: 1,
+          personal: 1,
+          learning: 1,
+          development: 0,
+          other: 0,
+          uncategorized: 1,
+        },
+      });
+
+    return request(app.getHttpServer())
+      .get('/tasks/1')
+      .expect(200)
+      .expect(before.body);
+  });
+
+  it('/tasks/report (GET) returns zero-filled buckets when empty', async () => {
+    await request(app.getHttpServer()).delete('/tasks/1').expect(200);
+
+    return request(app.getHttpServer())
+      .get('/tasks/report')
+      .expect(200)
+      .expect({
+        total: 0,
+        completed: 0,
+        incomplete: 0,
+        statusCounts: {
+          todo: 0,
+          in_progress: 0,
+          done: 0,
+          withoutStatus: 0,
+        },
+        priorityCounts: {
+          low: 0,
+          medium: 0,
+          high: 0,
+        },
+        categoryCounts: {
+          work: 0,
+          personal: 0,
+          learning: 0,
+          development: 0,
+          other: 0,
+          uncategorized: 0,
+        },
+      });
+  });
+
   it('/tasks/summary (GET) reflects task creation', async () => {
     await request(app.getHttpServer())
       .post('/tasks')

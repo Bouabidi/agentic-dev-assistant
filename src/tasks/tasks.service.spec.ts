@@ -36,6 +36,133 @@ describe('TasksService', () => {
     expect(tasks[0].completed).toBe(false);
   });
 
+  it('should report the baseline legacy task without mutating it', () => {
+    const task = service.findOne(1);
+    const before = { ...task };
+
+    expect(service.report()).toEqual({
+      total: 1,
+      completed: 0,
+      incomplete: 1,
+      statusCounts: {
+        todo: 0,
+        in_progress: 0,
+        done: 0,
+        withoutStatus: 1,
+      },
+      priorityCounts: {
+        low: 0,
+        medium: 1,
+        high: 0,
+      },
+      categoryCounts: {
+        work: 0,
+        personal: 0,
+        learning: 0,
+        development: 0,
+        other: 0,
+        uncategorized: 1,
+      },
+    });
+    expect(task).toEqual(before);
+  });
+
+  it('should report mixed task data in every grouping', () => {
+    service.create(
+      'Todo work',
+      undefined,
+      'low',
+      undefined,
+      undefined,
+      'work',
+      'todo',
+    );
+    service.create(
+      'In progress personal',
+      undefined,
+      'high',
+      undefined,
+      undefined,
+      'personal',
+      'in_progress',
+    );
+    service.create(
+      'Done learning',
+      undefined,
+      'medium',
+      undefined,
+      undefined,
+      'learning',
+      'done',
+    );
+
+    expect(service.report()).toEqual({
+      total: 4,
+      completed: 1,
+      incomplete: 3,
+      statusCounts: {
+        todo: 1,
+        in_progress: 1,
+        done: 1,
+        withoutStatus: 1,
+      },
+      priorityCounts: {
+        low: 1,
+        medium: 2,
+        high: 1,
+      },
+      categoryCounts: {
+        work: 1,
+        personal: 1,
+        learning: 1,
+        development: 0,
+        other: 0,
+        uncategorized: 1,
+      },
+    });
+  });
+
+  it('should use the default priority without mutating an undefined priority', () => {
+    const task = service.findOne(1);
+    task.priority = undefined as any;
+
+    expect(service.report().priorityCounts).toEqual({
+      low: 0,
+      medium: 1,
+      high: 0,
+    });
+    expect(task.priority).toBeUndefined();
+  });
+
+  it('should report zero-filled buckets for an empty collection', () => {
+    service.remove(1);
+
+    expect(service.report()).toEqual({
+      total: 0,
+      completed: 0,
+      incomplete: 0,
+      statusCounts: {
+        todo: 0,
+        in_progress: 0,
+        done: 0,
+        withoutStatus: 0,
+      },
+      priorityCounts: {
+        low: 0,
+        medium: 0,
+        high: 0,
+      },
+      categoryCounts: {
+        work: 0,
+        personal: 0,
+        learning: 0,
+        development: 0,
+        other: 0,
+        uncategorized: 0,
+      },
+    });
+  });
+
   it('should return tasks by priority', () => {
     service.create('Study MCP', undefined, 'high');
     service.create('Write docs', undefined, 'low');
