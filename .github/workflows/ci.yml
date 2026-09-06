@@ -4,14 +4,92 @@ on:
   pull_request:
     branches:
       - main
-
   push:
     branches:
       - main
 
 jobs:
-  test:
+  policy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check scope and traceability policy
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            comparison_range="$BASE_SHA...$HEAD_SHA"
+            changed_files="$(git diff --name-only "$comparison_range")"
+          elif [[ "$BEFORE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            comparison_range="initial push: $CURRENT_SHA"
+            changed_files="$(git ls-tree -r --name-only "$CURRENT_SHA")"
+          else
+            comparison_range="$BEFORE_SHA..$CURRENT_SHA"
+            changed_files="$(git diff --name-only "$comparison_range")"
+          fi
+
+          echo "Event: $EVENT_NAME"
+          echo "Comparison: $comparison_range"
+          echo "Changed files:"
+          if [[ -n "$changed_files" ]]; then
+            printf '%s\n' "$changed_files"
+          else
+            echo "(none)"
+          fi
+
+          policy_failed=false
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            if [[ "$path" == .github/agents/* || "$path" == .vscode/mcp.json || "$path" == .github/copilot-instructions.md ]]; then
+              echo "Protected-file policy violation: $path"
+              policy_failed=true
+            fi
+            if [[ "$path" == package.json || "$path" == package-lock.json ]]; then
+              echo "Dependency-file policy violation: $path"
+              policy_failed=true
+            fi
+          done <<< "$changed_files"
+
+          required_artifacts=(
+            docs/handoffs/exercise-11-plan.md
+            docs/handoffs/exercise-11-developer-report.md
+            docs/handoffs/exercise-11-test-report.md
+            docs/handoffs/exercise-11-review.md
+          )
+
+          for artifact in "${required_artifacts[@]}"; do
+            if [[ ! -f "$artifact" ]]; then
+              echo "Traceability policy violation: missing $artifact"
+              policy_failed=true
+            fi
+          done
+
+          if [[ "$policy_failed" == true ]]; then
+            echo "Scope/traceability policy gate failed."
+            exit 1
+          fi
+
+          echo "Scope/traceability policy gate passed."
+
+  quality:
+    needs: policy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
