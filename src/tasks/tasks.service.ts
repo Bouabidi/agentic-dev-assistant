@@ -9,6 +9,7 @@ import {
   TASK_STATUSES,
   Task,
   TaskCategory,
+  TaskFilters,
   TaskPriority,
   TaskStatus,
 } from './task';
@@ -57,7 +58,10 @@ export class TasksService {
       return undefined;
     }
 
-    if (typeof status !== 'string' || !TASK_STATUSES.includes(status as TaskStatus)) {
+    if (
+      typeof status !== 'string' ||
+      !TASK_STATUSES.includes(status as TaskStatus)
+    ) {
       throw new BadRequestException(
         'Task status must be one of: todo, in_progress, done',
       );
@@ -81,18 +85,39 @@ export class TasksService {
     }
   }
 
-  findAll(completed?: boolean, priority?: TaskPriority, tag?: string): Task[] {
-    return this.tasks.filter((task) => {
-      const ensuredTask = this.ensureTaskPriority(task);
-      const matchesCompleted =
-        completed === undefined || ensuredTask.completed === completed;
-      const matchesPriority =
-        priority === undefined || ensuredTask.priority === priority;
-      const matchesTag =
-        tag === undefined ||
-        (Array.isArray(ensuredTask.tags) && ensuredTask.tags.includes(tag));
+  findAll(filters?: TaskFilters): Task[];
+  findAll(completed?: boolean, priority?: TaskPriority, tag?: string): Task[];
+  findAll(
+    filtersOrCompleted?: TaskFilters | boolean,
+    priority?: TaskPriority,
+    tag?: string,
+  ): Task[] {
+    const filters: TaskFilters =
+      typeof filtersOrCompleted === 'object'
+        ? filtersOrCompleted
+        : { completed: filtersOrCompleted, priority, tag };
 
-      return matchesCompleted && matchesPriority && matchesTag;
+    return this.tasks.filter((task) => {
+      const taskPriority = task.priority ?? DEFAULT_TASK_PRIORITY;
+      const matchesStatus =
+        filters.status === undefined || task.status === filters.status;
+      const matchesCompleted =
+        filters.completed === undefined || task.completed === filters.completed;
+      const matchesPriority =
+        filters.priority === undefined || taskPriority === filters.priority;
+      const matchesCategory =
+        filters.category === undefined || task.category === filters.category;
+      const matchesTag =
+        filters.tag === undefined ||
+        (Array.isArray(task.tags) && task.tags.includes(filters.tag));
+
+      return (
+        matchesStatus &&
+        matchesCompleted &&
+        matchesPriority &&
+        matchesCategory &&
+        matchesTag
+      );
     });
   }
 
@@ -164,7 +189,7 @@ export class TasksService {
     this.validateStatusCompletedConsistency(validatedStatus, completed);
     const resolvedCompleted =
       validatedStatus === undefined
-        ? completed ?? false
+        ? (completed ?? false)
         : this.getCompletedForStatus(validatedStatus);
 
     const task: Task = {

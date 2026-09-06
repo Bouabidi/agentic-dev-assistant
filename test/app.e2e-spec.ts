@@ -584,6 +584,126 @@ describe('AppController (e2e)', () => {
       .expect(400);
   });
 
+  it('/tasks (GET) returns all tasks without filters', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/tasks')
+      .expect(200);
+
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].id).toBe(1);
+  });
+
+  it.each(['todo', 'in_progress', 'done'])(
+    '/tasks?status=%s filters by status',
+    async (status) => {
+      const created = await request(app.getHttpServer())
+        .post('/tasks')
+        .send({ title: `${status} task`, status })
+        .expect(201);
+
+      const response = await request(app.getHttpServer())
+        .get(`/tasks?status=${status}`)
+        .expect(200);
+
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0]).toMatchObject({ id: created.body.id, status });
+    },
+  );
+
+  it('/tasks?completed=true filters completed tasks', async () => {
+    await request(app.getHttpServer())
+      .patch('/tasks/1')
+      .send({ completed: true })
+      .expect(200);
+
+    const response = await request(app.getHttpServer())
+      .get('/tasks?completed=true')
+      .expect(200);
+
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].completed).toBe(true);
+  });
+
+  it('/tasks?completed=false filters incomplete tasks', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/tasks?completed=false')
+      .expect(200);
+
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].completed).toBe(false);
+  });
+
+  it('/tasks?priority=high filters by priority', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'High priority task', priority: 'high' })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/tasks?priority=high')
+      .expect(200);
+
+    expect(response.body).toEqual([created.body]);
+  });
+
+  it('/tasks?category=work filters by category', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Work task', category: 'work' })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/tasks?category=work')
+      .expect(200);
+
+    expect(response.body).toEqual([created.body]);
+  });
+
+  it('/tasks?tag=typescript filters by exact tag membership', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'TypeScript task', tags: ['nestjs', 'typescript'] })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/tasks?tag=typescript')
+      .expect(200);
+
+    expect(response.body).toEqual([created.body]);
+  });
+
+  it('/tasks?status=todo&priority=high uses AND semantics', async () => {
+    const matching = await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Matching task', status: 'todo', priority: 'high' })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Wrong priority', status: 'todo', priority: 'low' })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/tasks?status=todo&priority=high')
+      .expect(200);
+
+    expect(response.body).toEqual([matching.body]);
+  });
+
+  it('/tasks rejects invalid filter values', async () => {
+    for (const query of [
+      'status=invalid',
+      'status=',
+      'status=%20%20',
+      'priority=invalid',
+      'category=invalid',
+      'completed=maybe',
+      'completed=1',
+      'completed=0',
+    ]) {
+      await request(app.getHttpServer()).get(`/tasks?${query}`).expect(400);
+    }
+  });
+
   it('/tasks?priority=high (GET) filters by priority', () => {
     return request(app.getHttpServer())
       .post('/tasks')

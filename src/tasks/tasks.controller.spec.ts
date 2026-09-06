@@ -30,6 +30,50 @@ describe('TasksController', () => {
     );
   });
 
+  it.each(['invalid', '', '   '])(
+    'should reject invalid status filters',
+    (status) => {
+      expect(() =>
+        controller.findAll(undefined, undefined, undefined, status),
+      ).toThrow('Task status must be one of: todo, in_progress, done');
+    },
+  );
+
+  it('should reject invalid category filters', () => {
+    expect(() =>
+      controller.findAll(undefined, undefined, undefined, undefined, 'school'),
+    ).toThrow(
+      'Task category must be one of: work, personal, learning, development, other',
+    );
+  });
+
+  it('should normalize completed filters before delegating', () => {
+    expect(controller.findAll('false')).toEqual([
+      {
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+      },
+    ]);
+  });
+
+  it('should filter by status without assigning a legacy status', () => {
+    expect(controller.findAll(undefined, undefined, undefined, 'todo')).toEqual(
+      [],
+    );
+    expect(controller.findAll()).toEqual([
+      {
+        id: 1,
+        title: 'Learn GH-600',
+        description: 'Study Agentic AI Systems',
+        completed: false,
+        priority: 'medium',
+      },
+    ]);
+  });
+
   it('should return task statistics', () => {
     expect(controller.stats()).toEqual({
       total: 1,
@@ -236,11 +280,14 @@ describe('TasksController', () => {
     ['done', false],
     ['todo', true],
     ['in_progress', true],
-  ])('should reject inconsistent status and completed values', (status, completed) => {
-    expect(() =>
-      controller.create({ title: 'Study', status, completed } as any),
-    ).toThrow('Task status and completed values must be consistent');
-  });
+  ])(
+    'should reject inconsistent status and completed values',
+    (status, completed) => {
+      expect(() =>
+        controller.create({ title: 'Study', status, completed } as any),
+      ).toThrow('Task status and completed values must be consistent');
+    },
+  );
 
   it('should derive completed when patching status', () => {
     expect(controller.update('1', { status: 'done' })).toMatchObject({

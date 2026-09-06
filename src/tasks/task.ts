@@ -25,3 +25,11 @@ export interface Task {
   category?: TaskCategory;
   status?: TaskStatus;
 }
+
+export interface TaskFilters {
+  status?: TaskStatus;
+  completed?: boolean;
+  priority?: TaskPriority;
+  category?: TaskCategory;
+  tag?: string;
+}
