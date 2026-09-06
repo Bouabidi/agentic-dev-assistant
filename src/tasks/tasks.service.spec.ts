@@ -44,6 +44,162 @@ describe('TasksService', () => {
     expect(service.findAll(undefined, 'high')[0].title).toBe('Study MCP');
   });
 
+  it.each(['low', 'medium', 'high'] as const)(
+    'should filter tasks by priority %s',
+    (priority) => {
+      service.create(`${priority} task`, undefined, priority);
+
+      expect(service.findAll({ priority }).map((task) => task.title)).toContain(
+        `${priority} task`,
+      );
+    },
+  );
+
+  it('should filter tasks by each status', () => {
+    service.create(
+      'Todo task',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'todo',
+    );
+    service.create(
+      'In progress task',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'in_progress',
+    );
+    service.create(
+      'Done task',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'done',
+    );
+
+    expect(
+      service.findAll({ status: 'todo' }).map((task) => task.title),
+    ).toEqual(['Todo task']);
+    expect(
+      service.findAll({ status: 'in_progress' }).map((task) => task.title),
+    ).toEqual(['In progress task']);
+    expect(
+      service.findAll({ status: 'done' }).map((task) => task.title),
+    ).toEqual(['Done task']);
+  });
+
+  it('should filter by category', () => {
+    for (const category of [
+      'work',
+      'personal',
+      'learning',
+      'development',
+      'other',
+    ] as const) {
+      service.create(
+        category,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        category,
+      );
+    }
+
+    for (const category of [
+      'work',
+      'personal',
+      'learning',
+      'development',
+      'other',
+    ] as const) {
+      expect(service.findAll({ category }).map((task) => task.title)).toEqual([
+        category,
+      ]);
+    }
+  });
+
+  it('should apply filters with AND semantics', () => {
+    service.create(
+      'Match',
+      undefined,
+      'high',
+      undefined,
+      ['typescript'],
+      'development',
+      'todo',
+    );
+    service.create(
+      'Wrong priority',
+      undefined,
+      'low',
+      undefined,
+      ['typescript'],
+      'development',
+      'todo',
+    );
+    service.create(
+      'Wrong category',
+      undefined,
+      'high',
+      undefined,
+      ['typescript'],
+      'work',
+      'todo',
+    );
+    service.create(
+      'Wrong status',
+      undefined,
+      'high',
+      undefined,
+      ['typescript'],
+      'development',
+      'in_progress',
+    );
+
+    expect(
+      service
+        .findAll({
+          status: 'todo',
+          priority: 'high',
+          category: 'development',
+          tag: 'typescript',
+        })
+        .map((task) => task.title),
+    ).toEqual(['Match']);
+  });
+
+  it('should match tags exactly and return empty results for missing tags', () => {
+    service.create('Tagged task', undefined, undefined, undefined, [
+      'typescript',
+    ]);
+    service.create('Untagged task');
+
+    expect(
+      service.findAll({ tag: 'typescript' }).map((task) => task.title),
+    ).toEqual(['Tagged task']);
+    expect(service.findAll({ tag: 'script' })).toEqual([]);
+    expect(
+      service
+        .findAll({ tag: 'typescript' })
+        .some((task) => task.title === 'Untagged task'),
+    ).toBe(false);
+  });
+
+  it('should exclude legacy tasks from status filters without mutating them', () => {
+    const legacyTask = service.findOne(1);
+
+    expect(service.findAll({ status: 'done' })).toEqual([]);
+    expect(legacyTask.status).toBeUndefined();
+  });
+
   it('should return task statistics', () => {
     expect(service.stats()).toEqual({
       total: 1,
@@ -480,20 +636,23 @@ describe('TasksService', () => {
     ['done', false],
     ['todo', true],
     ['in_progress', true],
-  ])('should reject inconsistent status and completed values on create', (status, completed) => {
-    expect(() =>
-      service.create(
-        'Study status',
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        status as any,
-        completed as any,
-      ),
-    ).toThrow('Task status and completed values must be consistent');
-  });
+  ])(
+    'should reject inconsistent status and completed values on create',
+    (status, completed) => {
+      expect(() =>
+        service.create(
+          'Study status',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          status as any,
+          completed as any,
+        ),
+      ).toThrow('Task status and completed values must be consistent');
+    },
+  );
 
   it('should replace status and derive completed on update', () => {
     const task = service.update(1, { status: 'done' });
@@ -524,7 +683,10 @@ describe('TasksService', () => {
     expect(() => service.update(1, { completed: true })).toThrow(
       'Task status and completed values must be consistent',
     );
-    expect(service.findOne(1)).toMatchObject({ status: 'todo', completed: false });
+    expect(service.findOne(1)).toMatchObject({
+      status: 'todo',
+      completed: false,
+    });
   });
 
   it('should create a task with a dueDate', () => {

@@ -15,6 +15,7 @@ import {
   TASK_PRIORITIES,
   TASK_STATUSES,
   TaskCategory,
+  TaskFilters,
   TaskPriority,
   TaskStatus,
 } from './task';
@@ -125,7 +126,10 @@ export class TasksController {
       return undefined;
     }
 
-    if (typeof status !== 'string' || !TASK_STATUSES.includes(status as TaskStatus)) {
+    if (
+      typeof status !== 'string' ||
+      !TASK_STATUSES.includes(status as TaskStatus)
+    ) {
       throw new BadRequestException(
         'Task status must be one of: todo, in_progress, done',
       );
@@ -317,6 +321,8 @@ export class TasksController {
     @Query('completed') completed?: string,
     @Query('priority') priority?: string,
     @Query('tag') tag?: string,
+    @Query('status') status?: string,
+    @Query('category') category?: string,
   ) {
     if (
       completed !== undefined &&
@@ -342,12 +348,20 @@ export class TasksController {
 
     const normalizedPriority =
       priority === undefined ? undefined : this.validatePriorityValue(priority);
+    const normalizedStatus =
+      status === undefined ? undefined : this.validateStatusValue(status);
+    const normalizedCategory =
+      category === undefined ? undefined : this.validateCategoryValue(category);
 
-    return this.tasksService.findAll(
-      completed === undefined ? undefined : completed === 'true',
-      normalizedPriority,
-      tag === undefined ? undefined : tag.trim(),
-    );
+    const filters: TaskFilters = {
+      completed: completed === undefined ? undefined : completed === 'true',
+      priority: normalizedPriority,
+      tag: tag === undefined ? undefined : tag.trim(),
+      status: normalizedStatus,
+      category: normalizedCategory,
+    };
+
+    return this.tasksService.findAll(filters);
   }
 
   @Get(':id')
