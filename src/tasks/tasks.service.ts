@@ -11,6 +11,7 @@ import {
   TaskCategory,
   TaskFilters,
   TaskPriority,
+  TaskReport,
   TaskStatus,
 } from './task';
 
@@ -119,6 +120,60 @@ export class TasksService {
         matchesTag
       );
     });
+  }
+
+  report(): TaskReport {
+    const report: TaskReport = {
+      total: 0,
+      completed: 0,
+      incomplete: 0,
+      statusCounts: {
+        todo: 0,
+        in_progress: 0,
+        done: 0,
+        withoutStatus: 0,
+      },
+      priorityCounts: {
+        low: 0,
+        medium: 0,
+        high: 0,
+      },
+      categoryCounts: {
+        work: 0,
+        personal: 0,
+        learning: 0,
+        development: 0,
+        other: 0,
+        uncategorized: 0,
+      },
+    };
+
+    this.tasks.forEach((task) => {
+      report.total += 1;
+
+      if (task.completed) {
+        report.completed += 1;
+      } else {
+        report.incomplete += 1;
+      }
+
+      if (task.status === undefined) {
+        report.statusCounts.withoutStatus += 1;
+      } else {
+        report.statusCounts[task.status] += 1;
+      }
+
+      const priority = task.priority ?? DEFAULT_TASK_PRIORITY;
+      report.priorityCounts[priority] += 1;
+
+      if (task.category === undefined) {
+        report.categoryCounts.uncategorized += 1;
+      } else {
+        report.categoryCounts[task.category] += 1;
+      }
+    });
+
+    return report;
   }
 
   search(query: string): Task[] {
