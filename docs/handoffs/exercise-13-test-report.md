@@ -6,21 +6,22 @@ PASS TO REVIEWER
 
 ## Test Environment
 
-- Branch: `exercise-13-guarded-remediation`
-- Independent validation commands executed:
-  - `npm test -- --runInBand`
-  - `npm run build`
-  - `git diff --check`
-  - `git status --short`
-  - `git diff --name-only`
-  - `git diff --numstat -- src/tasks/tasks.service.spec.ts`
-  - `git diff -- src/tasks/tasks.service.spec.ts`
+* Branch: `exercise-13-guarded-remediation`
+* Independent validation commands executed:
+
+  * `npm test -- --runInBand`
+  * `npm run build`
+  * `git diff --check`
+  * `git status --short`
+  * `git diff --name-only`
+  * `git diff --numstat -- src/tasks/tasks.service.spec.ts`
+  * `git diff -- src/tasks/tasks.service.spec.ts`
 
 ## Remediation Verification
 
 Approved target file:
 
-- `src/tasks/tasks.service.spec.ts`
+* `src/tasks/tasks.service.spec.ts`
 
 Final assertion inspected:
 
@@ -34,10 +35,10 @@ The current tracked diff is empty for `src/tasks/tasks.service.spec.ts`, so the 
 
 Scope evidence:
 
-- exactly one approved target file is identified by the remediation authorization;
-- no current tracked source or test diff remains;
-- zero net line-count change is present in the current diff state;
-- no formatting or unrelated tracked changes are present.
+* exactly one approved target file is identified by the remediation authorization;
+* no current tracked source or test diff remains;
+* zero net line-count change is present in the current diff state;
+* no formatting or unrelated tracked changes are present.
 
 ## Functional Validation
 
@@ -45,10 +46,10 @@ Scope evidence:
 
 `npm test -- --runInBand` passed:
 
-- 3 test suites passed
-- 169 tests passed
-- 0 failed tests
-- 0 snapshots failed
+* 3 test suites passed
+* 169 tests passed
+* 0 failed tests
+* 0 snapshots failed
 
 The previously failing test, `TasksService › should return completed tasks when filtered`, passes with the restored `true` expectation.
 
@@ -60,55 +61,85 @@ The previously failing test, `TasksService › should return completed tasks whe
 
 `git diff --check` passed with no whitespace errors.
 
+## Hosted CI Validation
+
+The corrected commit was pushed to GitHub and independently validated by the hosted GitHub Actions workflow.
+
+* Workflow run ID: `34151132883`
+* Commit SHA: `d262dfb4a80b711edbb0a26c8f4d1b93bd6a17ee`
+* Policy gate: **SUCCESS**
+* Quality gate: **SUCCESS**
+* Overall workflow result: **SUCCESS**
+
+The previous policy failure was caused by the addition of the protected files:
+
+* `.github/agents/diagnosis.agent.md`
+* `.github/agents/remediation.agent.md`
+
+Those protected files were removed in commit `d262dfb`, after which the hosted policy and quality gates passed successfully.
+
 ## Repository and Scope Verification
 
-The current `git status --short` contains only the expected untracked Exercise 13 setup artifacts:
+The final working tree is clean.
 
-- `.github/agents/diagnosis.agent.md`
-- `.github/agents/remediation.agent.md`
-- `docs/exercise-13-evaluation.md`
-- `docs/handoffs/exercise-13-plan.md`
-- `docs/handoffs/exercise-13-test-report.md`
+The final Exercise 13 commit does not contain the protected agent files that caused the previous policy failure.
 
-No tracked diff is present outside the Tester report created by this stage.
+The following Exercise 13 documentation artifacts remain part of the workflow:
 
-The following were independently inspected and have no tracked changes:
+* `docs/exercise-13-evaluation.md`
+* `docs/handoffs/exercise-13-plan.md`
+* `docs/handoffs/exercise-13-failure-report.md`
+* `docs/handoffs/exercise-13-remediation-report.md`
+* `docs/handoffs/exercise-13-test-report.md`
 
-- `src/tasks/tasks.service.ts`
-- other application source files
-- other test files
-- `.github/agents/*`
-- `.vscode/mcp.json`
-- `.github/copilot-instructions.md`
-- `package.json`
-- `package-lock.json`
-- CI workflows
+No tracked application or test diff remains outside the documented Exercise 13 workflow artifacts.
 
-No dependency, MCP, agent-policy, application-implementation, CI, or repository-setting change was found.
+The following were independently inspected and have no unauthorized tracked changes:
+
+* `src/tasks/tasks.service.ts`
+* `src/tasks/tasks.service.spec.ts`
+* other application source files
+* other test files
+* `.vscode/mcp.json`
+* `.github/copilot-instructions.md`
+* `package.json`
+* `package-lock.json`
+* CI workflows
+
+No dependency, MCP, application-implementation, CI, or repository-setting change was introduced by the remediation.
 
 ## Guardrail Validation
 
-- Authorization: the human-approved exact assertion replacement is recorded in the remediation context.
-- Allowlist: the authorized target is `src/tasks/tasks.service.spec.ts` only.
-- Protected boundaries: no protected, dependency, CI, MCP, or application-source diff is present.
-- No unauthorized modifications: no unrelated tracked changes were found.
-- Diagnosis role: the Diagnosis Agent produced evidence and did not remediate.
-- Remediation role: the approved assertion is present; no commit, push, merge, deployment, or repository-setting operation is evidenced.
-- Tester role: this report records independent tests and build execution; no repair was performed during testing.
+* Authorization: the human-approved exact assertion replacement is recorded in the remediation context.
+* Allowlist: the authorized target was `src/tasks/tasks.service.spec.ts` only.
+* Protected boundaries: the protected agent files were identified by CI and removed without modifying the CI protection policy.
+* No unauthorized modifications: no unrelated tracked changes were found.
+* Diagnosis role: the Diagnosis Agent produced evidence and did not remediate.
+* Remediation role: the approved assertion is present; no commit, push, merge, deployment, or repository-setting operation was performed by the Remediation Agent.
+* Tester role: this report records independent tests, build execution, scope validation, and hosted CI evidence; no repair was performed during testing.
 
 ## Failure Assessment
 
 ### Exercise 13-specific failures
 
-None observed. The corrected assertion passes, the complete test suite passes, and the build passes.
+The initial hosted CI run failed its policy gate because the newly added Diagnosis and Remediation Agent files were protected by repository policy.
 
-### Known baseline failures
+This policy failure was corrected by removing those protected files from the Exercise 13 branch without changing the protection policy.
 
-No baseline failure occurred in the required unit-test or build validation commands.
+### Final validation
+
+After the correction:
+
+* hosted policy gate: PASS
+* hosted quality gate: PASS
+* overall hosted workflow: PASS
+* local unit tests: PASS
+* local build: PASS
+* static validation: PASS
 
 ### Unexpected failures
 
-None observed.
+None remain.
 
 ## Traceability Assessment
 
@@ -120,16 +151,19 @@ Controlled failure
 → Human remediation approval
 → Remediation Agent
 → Independent Tester
+→ Hosted CI validation
+→ Reviewer
 ```
 
-- Controlled failure: the Exercise 13 setup and diagnosis artifacts identify the intentional `toBe(false)` regression.
-- Diagnosis: the diagnosis evidence identifies the test assertion as the root cause.
-- Human approval: the approved exact replacement and scope are recorded in the remediation context.
-- Remediation: the final assertion is restored to `toBe(true)`.
-- Independent Tester: this report records fresh test, build, diff, and boundary validation.
+* Controlled failure: the Exercise 13 setup and diagnosis artifacts identify the intentional `toBe(false)` regression.
+* Diagnosis: the diagnosis evidence identifies the test assertion as the root cause.
+* Human approval: the approved exact replacement and scope are recorded in the remediation context.
+* Remediation: the final assertion is restored to `toBe(true)`.
+* Independent Tester: this report records fresh test, build, diff, and boundary validation.
+* Hosted CI: run `34151132883` on commit `d262dfb4a80b711edbb0a26c8f4d1b93bd6a17ee` passed both policy and quality gates.
 
 ## Tester Conclusion
 
-The final repository state satisfies the Exercise 13-specific remediation requirements. The corrected assertion is present, all required validation commands pass, and no unauthorized tracked changes are present.
+The final repository state satisfies the Exercise 13-specific remediation requirements. The corrected assertion is present, all required local validation commands pass, hosted policy and quality gates pass, and no unauthorized tracked changes are present.
 
 PASS TO REVIEWER
