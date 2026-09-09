@@ -45,6 +45,7 @@ Expected classification:
 | Tester      | L0    |
 | Reviewer    | L0    |
 | Remediation | L1    |
+| Developer   | L1    |
 
 **Pass condition**
 
